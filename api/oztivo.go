@@ -23,12 +23,14 @@ type DataList struct {
 }
 
 type Programme struct {
-	StartTime string `xml:"start,attr"`
-	StopTime  string `xml:"stop,attr"`
-	Title     string `xml:"title"`
-	SubTitle  string `xml:"sub-title"`
-	Desc      string `xml:"title"`
-	Credits   []struct {
+	StartTime   string    `xml:"start,attr" json:"-"`
+	StopTime    string    `xml:"stop,attr" json:"-"`
+	StartTimeJ  time.Time `xml:"-" json:"start_time"`
+	StopTimeJ   time.Time `xml:"-" json:"stop_time"`
+	Title       string    `xml:"title"`
+	SubTitle    string    `xml:"sub-title" json:"subtitle"`
+	Description string    `xml:"desc" json:"description"`
+	Credits     []struct {
 		Actor string `xml:"actor"`
 	} `xml:"credits"`
 	Category []string `xml:"category"`
@@ -37,11 +39,11 @@ type Programme struct {
 	} `xml:"rating"`
 	StarRating []struct {
 		Value string `xml:"value"`
-	} `xml:"star-rating"`
+	} `xml:"star-rating" json:"star_rating"`
 }
 
 type ChannelDay struct {
-	Programmes []Programme `xml:"programme"`
+	Programmes []*Programme `xml:"programme"`
 }
 
 const (
@@ -50,8 +52,8 @@ const (
 )
 
 // Convert time strings to time.Time
-func parseDataFor() {
-	for _, channel := range dataList.Channels {
+func (d *DataList) parseDataFor() {
+	for _, channel := range d.Channels {
 		if channel.DataForT == nil {
 			channel.DataForT = make(map[time.Time]bool)
 		}
@@ -69,11 +71,26 @@ func parseDataFor() {
 	}
 }
 
+// Convert time strings to time.Time
+func (c ChannelDay) parseStopStart() {
+	for _, programme := range c.Programmes {
+		var err error
+		programme.StartTimeJ, err = time.Parse("20060102150405 -0700", programme.StartTime)
+		if err != nil {
+			log.Println(err)
+		}
+		programme.StopTimeJ, err = time.Parse("20060102150405 -0700", programme.StopTime)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+}
+
 // Convert slice of channels to map of channels
-func buildChannelMap() {
-	dataList.ChannelMap = make(map[string]*Channel)
-	for _, channel := range dataList.Channels {
+func (d *DataList) buildChannelMap() {
+	d.ChannelMap = make(map[string]*Channel)
+	for _, channel := range d.Channels {
 		log.Printf("Add to map %s\n", channel)
-		dataList.ChannelMap[channel.Id] = channel
+		d.ChannelMap[channel.Id] = channel
 	}
 }
