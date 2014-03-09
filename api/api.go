@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	//	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -41,7 +42,7 @@ type ChannelResponse struct {
 }
 
 type APIResponse struct {
-	Error string `json:"error"`
+	Error string `json:"error,omitempty"`
 	Data  string `json:"data,omitempty"`
 }
 
@@ -51,7 +52,7 @@ var ResponseLimit int = 500
 func InitAPI(userAgent string) error {
 	dataList = &DataList{}
 
-	dataList.Channels = append(dataList.Channels, &Channel{Id: "7a"}, &Channel{Id: "10C", DataFor: []string{"2014-03-09"}})
+	dataList.Channels = append(dataList.Channels, &Channel{Id: "7A", DataFor: []string{"2014-03-08", "2014-03-09", "2014-03-10"}}, &Channel{Id: "10C", DataFor: []string{"2014-03-08", "2014-03-09", "2014-03-10"}}, &Channel{Id: "9B", DataFor: []string{"2014-03-08", "2014-03-09", "2014-03-10"}})
 
 	/*
 		t := httpcache.NewMemoryCacheTransport()
@@ -149,25 +150,46 @@ func ProgrammeHandler(w http.ResponseWriter, r *http.Request, params martini.Par
 		return
 	}
 
+	filenames, err := pr.buildFileList()
+
+	if err != nil {
+		apiResponse.Error = err.Error()
+	}
+
+	for i, filename := range filenames {
+		//fetch filenames
+		log.Println(i, filename)
+	}
+
+	apiResponse.Error = "No Results found"
+	WriteJsonRes(w, apiResponse, http.StatusOK)
+	return
+
+}
+
+func (pr ProgrammeRequest) buildFileList() (filenames []string, err error) {
+	filenames = make([]string, 0)
 	for _, channelr := range pr.Channels {
 		log.Printf("channelr: %v\n", channelr)
 		channel := dataList.ChannelMap[channelr]
-		log.Printf("channel: %v\n", channel)
-		log.Printf("channel map: %v\n", channel.DataForT)
 		if channel != nil {
+			log.Printf("channel: %v\n", channel)
+			log.Printf("channel map: %v\n", channel.DataForT)
 			for _, dayr := range pr.Days {
-		log.Printf("dayr: %v\n", dayr)
-				dayrMidnight := time.Date(dayr.Year(), dayr.Month(), dayr.Hour(), 0, 0, 0, 0, dayr.Location())
-		log.Printf("dayrMidnight: %v\n", dayrMidnight)
+				log.Printf("dayr: %v\n", dayr)
+				dayrMidnight := time.Date(dayr.Year(), dayr.Month(), dayr.Day(), 0, 0, 0, 0, dayr.Location())
+				log.Printf("dayrMidnight: %v\n", dayrMidnight)
 				day := channel.DataForT[dayrMidnight]
 				if day {
 					filename := channel.Id + "_" + dayrMidnight.Format("2006-01-02") + ".xml.gz"
-						log.Printf("Request filename: %s\n", filename)
+					filenames = append(filenames, filename)
 				}
 			}
+		} else {
+			err = errors.New("Channel " + channelr + " not found")
 		}
 	}
-
+	return
 }
 
 func CharsetReader(charset string, input io.Reader) (io.Reader, error) {

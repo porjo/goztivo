@@ -1,8 +1,8 @@
 package api
 
 import (
-	"time"
 	"log"
+	"time"
 )
 
 type Channel struct {
@@ -62,7 +62,6 @@ func parseDataFor() {
 			} else {
 				channel.DataForT[t] = true
 			}
-				log.Printf("df %v t %v dft %v\n", df, t, channel.DataForT)
 		}
 
 		// Clear slice
@@ -74,6 +73,7 @@ func parseDataFor() {
 func buildChannelMap() {
 	dataList.ChannelMap = make(map[string]*Channel)
 	for _, channel := range dataList.Channels {
+		log.Printf("Add to map %s\n", channel)
 		dataList.ChannelMap[channel.Id] = channel
 	}
 }
