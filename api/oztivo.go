@@ -1,8 +1,8 @@
 package api
 
 import (
-//	"fmt"
-//	"time"
+	"time"
+	"log"
 )
 
 type Channel struct {
@@ -11,9 +11,9 @@ type Channel struct {
 		Name string `xml:",innerxml"`
 		Lang string `xml:"lang,attr"`
 	} `xml:"display-name"`
-	BaseURL []string `xml:"base-url"`
-	dataFor []string `xml:"datafor"`
-	//	DataFor_  []time.Time `xml:"-"`
+	BaseURL  []string           `xml:"base-url" json:"-"`
+	DataFor  []string           `xml:"datafor" json:"-"`
+	DataForT map[time.Time]bool `xml:"-" json:"-"`
 }
 
 type DataList struct {
@@ -49,23 +49,28 @@ const (
 	DataListFile = BaseURL + "datalist.xml.gz"
 )
 
-/*
+// Convert time strings to time.Time
 func parseDataFor() {
-	fmt.Printf("DataFor enter\n")
 	for _, channel := range dataList.Channels {
-		fmt.Printf("DataFor channel %+v\n", channel)
-		for _, df := range channel.dataFor {
-			fmt.Printf("1DataFor: %v\n", df)
-			t, err := time.Parse("2006-01-02", df)
-			if err == nil {
-				fmt.Printf("2DataFor: %v\n", t)
-				channel.DataFor_ = append(channel.DataFor_, t)
-			}
+		if channel.DataForT == nil {
+			channel.DataForT = make(map[time.Time]bool)
 		}
+		for _, df := range channel.DataFor {
+			t, err := time.Parse("2006-01-02", df)
+			if err != nil {
+				log.Println(df, err)
+			} else {
+				channel.DataForT[t] = true
+			}
+				log.Printf("df %v t %v dft %v\n", df, t, channel.DataForT)
+		}
+
+		// Clear slice
+		channel.DataFor = nil
 	}
 }
-*/
 
+// Convert slice of channels to map of channels
 func buildChannelMap() {
 	dataList.ChannelMap = make(map[string]*Channel)
 	for _, channel := range dataList.Channels {
