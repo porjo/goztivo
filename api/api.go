@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	//	"encoding/xml"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,7 +15,7 @@ import (
 	"code.google.com/p/go.text/transform"
 	"github.com/codegangsta/martini"
 
-//	"github.com/gregjones/httpcache"
+	"github.com/gregjones/httpcache"
 )
 
 type ProgrammeRequest struct {
@@ -50,40 +50,34 @@ var ResponseLimit int = 500
 func InitAPI(userAgent string) error {
 	dataList = &DataList{}
 
-	dataList.Channels = append(dataList.Channels, &Channel{Id: "7a"}, &Channel{Id: "10C"})
-	/*
-		t := httpcache.NewMemoryCacheTransport()
-		client := http.Client{Transport: t}
-		req, err := http.NewRequest("GET", DataListFile, nil)
-		if err != nil {
-			return err
-		}
-		req.Header.Set("User-Agent", userAgent)
-		log.Println("Requesting datalist: " + DataListFile)
-		res, err := client.Do(req)
-		if err != nil {
-			return err
-		}
-		defer res.Body.Close()
+	//dataList.Channels = append(dataList.Channels, &Channel{Id: "7a"}, &Channel{Id: "10C", DataFor:})
+	t := httpcache.NewMemoryCacheTransport()
+	client := http.Client{Transport: t}
+	req, err := http.NewRequest("GET", DataListFile, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("User-Agent", userAgent)
+	log.Println("Requesting datalist: " + DataListFile)
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
 
-		decoder := xml.NewDecoder(res.Body)
-		decoder.CharsetReader = CharsetReader
+	decoder := xml.NewDecoder(res.Body)
+	decoder.CharsetReader = CharsetReader
 
-		decoder.Decode(&dataList)
-		if err != nil {
-			return err
-		}
-	*/
+	decoder.Decode(&dataList)
+	if err != nil {
+		return err
+	}
+	//parseDataFor()
 	buildChannelMap()
 
-	return nil
-}
+	fmt.Printf("%v\n", dataList)
 
-func buildChannelMap() {
-	dataList.ChannelMap = make(map[string]*Channel)
-	for _, channel := range dataList.Channels {
-		dataList.ChannelMap[channel.Id] = channel
-	}
+	return nil
 }
 
 func ChannelHandler(w http.ResponseWriter, r *http.Request, params martini.Params) {

@@ -1,5 +1,10 @@
 package api
 
+import (
+//	"fmt"
+//	"time"
+)
+
 type Channel struct {
 	Id          string `xml:"id,attr"`
 	DisplayName struct {
@@ -7,7 +12,8 @@ type Channel struct {
 		Lang string `xml:"lang,attr"`
 	} `xml:"display-name"`
 	BaseURL []string `xml:"base-url"`
-	DataFor []string `xml:"datafor"`
+	dataFor []string `xml:"datafor"`
+	//	DataFor_  []time.Time `xml:"-"`
 }
 
 type DataList struct {
@@ -39,6 +45,30 @@ type ChannelDay struct {
 }
 
 const (
-	BaseURL = "http://xml.oztivo.net/xmltv/"
+	BaseURL      = "http://xml.oztivo.net/xmltv/"
 	DataListFile = BaseURL + "datalist.xml.gz"
 )
+
+/*
+func parseDataFor() {
+	fmt.Printf("DataFor enter\n")
+	for _, channel := range dataList.Channels {
+		fmt.Printf("DataFor channel %+v\n", channel)
+		for _, df := range channel.dataFor {
+			fmt.Printf("1DataFor: %v\n", df)
+			t, err := time.Parse("2006-01-02", df)
+			if err == nil {
+				fmt.Printf("2DataFor: %v\n", t)
+				channel.DataFor_ = append(channel.DataFor_, t)
+			}
+		}
+	}
+}
+*/
+
+func buildChannelMap() {
+	dataList.ChannelMap = make(map[string]*Channel)
+	for _, channel := range dataList.Channels {
+		dataList.ChannelMap[channel.Id] = channel
+	}
+}
