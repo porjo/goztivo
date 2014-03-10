@@ -8,7 +8,7 @@ import (
 type Channel struct {
 	Id          string `xml:"id,attr"`
 	DisplayName struct {
-		Name string `xml:",innerxml"`
+		Text string `xml:",innerxml"`
 		Lang string `xml:"lang,attr"`
 	} `xml:"display-name"`
 	BaseURL  []string           `xml:"base-url" json:"-"`

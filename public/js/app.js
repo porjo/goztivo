@@ -7,31 +7,26 @@ var app = angular.module('app', []);
 app.controller('Ctrl', ['$scope', '$http', '$timeout',
 	       function($scope, $http, $timeout) {
 		       var timer;
+		       var channels = [];
 		       $scope.channel = {};
 
-		       Update(''); 
+		       GetChannels(); 
 
 		       $scope.channel.Select = function(selected) {
 			       console.log("select ", selected);
 		       }
 
-		       $scope.channel.Update = function(query) {
-			       console.log("search ", query);
-			       // Delay submit
-			       if(timer){
-				       $timeout.cancel(timer)
-			       }  
-			       timer = $timeout(function(){
-				       Update(query); 
-			       },500)
-		       }
-
-
-		       function Update(query) {
-			       $http.post('/api/channel',{channel_name: query, contains: true}).
+		       function GetChannels() {
+			       $http.post('/api/channel',{channel_name: ''}).
 				       success(function(data, status, headers, config) {
 				       console.log('success');
-				       $scope.channel.list = data;
+				       angular.forEach(data, function(v){
+					       	channels.push(v);
+				       });
+				       $scope.channel.list = channels;
+				       //console.log($scope.channel.list);
+				       //console.log(data);
+				       console.log(channels);
 			       }).
 				       error(function(data, status, headers, config) {
 				       console.log('failure',data);

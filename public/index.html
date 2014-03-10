@@ -23,8 +23,10 @@
 
 						<form role="form" name="channelForm" class="well" novalidate>
 							<div class="form-group">
-								<input type="text" placeholder="Enter channel name" class="form-control" ng-model="channel.query" ng-keyup="channel.Update(channel.query)">
-								<select size=10 class="form-control" ng-model="channel.listSelected" ng-change="channel.Select(channel.listSelected)" ng-options="c.Id as c.DisplayName.Name for c in channel.list" multiple></select>
+								<input type="text" placeholder="Enter channel name" class="form-control" ng-model="channel.query">
+								<!-- <select size=10 class="form-control" ng-model="channel.selected" ng-options="v.Id as v.DisplayName.Text for (k, v) in channel.list | filter:{Id: channel.query}" multiple></select> -->
+								<select size=10 class="form-control" ng-model="channel.selected" ng-options="c.Id as c.DisplayName.Text for c in channel.list | filter:channel.query" multiple></select>
+								{{channel.selected}}
 							</div>
 						</form>
 
