@@ -265,7 +265,12 @@ func WriteJsonRes(w http.ResponseWriter, obj interface{}, statusCode int) {
 	if err != nil {
 		json = []byte("{\"statusCode\": 500, \"error\": \"" + err.Error() + "\"}")
 	}
+
+	// JSON Vulnerability Protection for AngularJS
+	ngPrefix := []byte(")]}',\n")
+	ngPrefix = append(ngPrefix, json...)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	w.Write(json)
+	w.Write(ngPrefix)
 }
