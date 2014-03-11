@@ -27,7 +27,7 @@ type Programme struct {
 	StopTime    string    `xml:"stop,attr" json:"-"`
 	StartTimeJ  time.Time `xml:"-" json:"start_time"`
 	StopTimeJ   time.Time `xml:"-" json:"stop_time"`
-	Title       string    `xml:"title"`
+	Title       string    `xml:"title" json:"title"`
 	SubTitle    string    `xml:"sub-title" json:"subtitle"`
 	Description string    `xml:"desc" json:"description"`
 	Credits     []struct {
@@ -43,7 +43,8 @@ type Programme struct {
 }
 
 type ChannelDay struct {
-	Programmes []*Programme `xml:"programme"`
+	Channel    string       `xml:"-" json:"channel"`
+	Programmes []*Programme `xml:"programme" json:"programme"`
 }
 
 const (
@@ -90,7 +91,7 @@ func (c ChannelDay) parseStopStart() {
 func (d *DataList) buildChannelMap() {
 	d.ChannelMap = make(map[string]*Channel)
 	for _, channel := range d.Channels {
-		log.Printf("Add to map %s\n", channel)
+		//log.Printf("Add to map %s\n", channel)
 		d.ChannelMap[channel.Id] = channel
 	}
 }

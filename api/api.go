@@ -54,6 +54,11 @@ type APIResponse struct {
 	Data  interface{} `json:"data,omitempty"`
 }
 
+type FileRequest struct {
+	Channel  string
+	Filename string
+}
+
 var (
 	dataList      *DataList
 	ResponseLimit int = 500
@@ -163,18 +168,20 @@ func ProgrammeHandler(w http.ResponseWriter, r *http.Request, params martini.Par
 		return
 	}
 
-	filenames, err := pr.buildFileList()
+	fileRequests, err := pr.buildFileList()
 	if err != nil {
 		apiResponse.Error = err.Error()
+		WriteJsonRes(w, apiResponse, http.StatusBadRequest)
+		return
 	}
 
-	if len(filenames) == 0 {
+	if len(fileRequests) == 0 {
 		apiResponse.Error = "No Results found"
 		WriteJsonRes(w, apiResponse, http.StatusOK)
 		return
 	}
 
-	channelDays, err := fetchChannelDays(filenames)
+	channelDays, err := fetchChannelDays(fileRequests)
 	if err != nil {
 		apiResponse.Error = err.Error()
 		if e, ok := err.(HttpError); ok {
@@ -195,20 +202,21 @@ func ProgrammeHandler(w http.ResponseWriter, r *http.Request, params martini.Par
 }
 
 // Fetch filenames
-func fetchChannelDays(filenames []string) (channelDays []ChannelDay, err error) {
+func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err error) {
 	channelDays = make([]ChannelDay, 0)
 	client := transport.Client()
-	for _, filename := range filenames {
+	for _, fileRequest := range fileRequests {
 
 		var req *http.Request
 		var res *http.Response
 
-		url := BaseURL + filename
+		url := BaseURL + fileRequest.Filename
 		req, err = http.NewRequest("GET", url, nil)
 		if err != nil {
 			return
 		}
 		req.Header.Set("User-Agent", userAgent)
+		log.Println("Fetching URL: " + url)
 		res, err = client.Do(req)
 		if err != nil {
 			return
@@ -221,6 +229,7 @@ func fetchChannelDays(filenames []string) (channelDays []ChannelDay, err error) 
 		decoder := xml.NewDecoder(res.Body)
 		decoder.CharsetReader = CharsetReader
 		channelDay := ChannelDay{}
+		channelDay.Channel = fileRequest.Channel
 		err = decoder.Decode(&channelDay)
 		if err != nil {
 			res.Body.Close()
@@ -232,8 +241,8 @@ func fetchChannelDays(filenames []string) (channelDays []ChannelDay, err error) 
 	return
 }
 
-func (pr ProgrammeRequest) buildFileList() (filenames []string, err error) {
-	filenames = make([]string, 0)
+func (pr ProgrammeRequest) buildFileList() (fileRequests []FileRequest, err error) {
+	fileRequests = make([]FileRequest, 0)
 	for _, channelr := range pr.Channels {
 		channel := dataList.ChannelMap[channelr]
 		if channel != nil {
@@ -242,7 +251,8 @@ func (pr ProgrammeRequest) buildFileList() (filenames []string, err error) {
 				day := channel.DataForT[dayrMidnight]
 				if day {
 					filename := channel.Id + "_" + dayrMidnight.Format("2006-01-02") + ".xml.gz"
-					filenames = append(filenames, filename)
+					fileRequest := FileRequest{channelr, filename}
+					fileRequests = append(fileRequests, fileRequest)
 				}
 			}
 		} else {

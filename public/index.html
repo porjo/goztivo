@@ -24,22 +24,36 @@
 						<form role="form" name="channelForm" class="well" novalidate>
 							<div class="form-group">
 								<input type="text" placeholder="Enter channel name" class="form-control" ng-model="channel.query">
-								<!-- <select size=10 class="form-control" ng-model="channel.selected" ng-options="v.Id as v.DisplayName.Text for (k, v) in channel.list | filter:{Id: channel.query}" multiple></select> -->
-								<select size=10 class="form-control" ng-model="channel.selected" ng-options="c.Id as c.DisplayName.Text for c in channel.list | filter:channel.query" multiple></select>
+								<select size=10 class="form-control" ng-model="channel.selected" ng-change="channel.Select()" ng-options="c.Id as c.DisplayName.Text for c in channel.list | channelFilter:channel.query" multiple></select>
 								{{channel.selected}}
 							</div>
 						</form>
 
 					</div>
 					<div class="col-md-3">
-						<h2>Times</h2>
-						<div class="btn-group">
-							<button type="button" class="btn btn-default">Today</button>
-							<button type="button" class="btn btn-default">Tommorrow</button>
-						</div>
+						<h2>Days</h2>
+						<select size=10 class="form-control" ng-model="channel.selectedDay" ng-change="channel.SelectDay()" ng-options="d.value as d.name for d in channel.days" multiple></select>
 
 					</div>
+					<div class="col-md-3">
+					</div>
+
 				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-8 col-md-offset-2">
+				<ul class="list-group">
+					<li ng-repeat="c in programme.list" class="list-group-item">
+					<p>{{c.channel}}</p>
+					<ul>
+						<li ng-repeat="p in c.programme" class="list-group-item">
+						<p>{{p.title}}: {{p.description}}</p>
+						</li>
+					</ul>
+					</li>
+				</ul>
+
 			</div>
 		</div>
 	</div>
