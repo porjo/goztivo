@@ -16,8 +16,8 @@ and keeping traffic to a minimum by caching data
 
 To run Goztivo on Linux, first install Golang. On Redhat systems that should be as simple as `yum install golang`
 
-- Install the Goztivo repository `go get http://github.com/porjo/goztivo`
-- Change to goztivo loction `cd $GOPATH/src/goztivo`
+- Install the Goztivo repository `go get github.com/porjo/goztivo`
+- Change to Goztivo's install loction `cd $GOPATH/src/github.com/porjo/goztivo`
 - Run Goztivo `go run main.go`
 - Browse to your IP on port `3000` e.g. `http://localhost:3000`
 

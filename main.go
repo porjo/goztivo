@@ -6,10 +6,10 @@
 package main
 
 import (
-	"goztivo/api"
 	"log"
 
 	"github.com/codegangsta/martini"
+	"github.com/porjo/goztivo/api"
 )
 
 const (
