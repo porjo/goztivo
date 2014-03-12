@@ -45,8 +45,8 @@ type Programme struct {
 }
 
 type ChannelDay struct {
-	Channel    string       `xml:"-" json:"channel"`
-	Programmes []*Programme `xml:"programme" json:"programme"`
+	ChannelName string       `xml:"-" json:"channel_name"`
+	Programmes  []*Programme `xml:"programme" json:"programme"`
 }
 
 const (

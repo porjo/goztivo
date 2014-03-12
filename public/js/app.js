@@ -7,8 +7,6 @@ var app = angular.module('app', []);
 app.controller('Ctrl', ['$scope', '$http', '$timeout',
 	       function($scope, $http, $timeout) {
 		       var timer;
-		       var channels = [];
-		       var programmes = [];
 		       $scope.channel = {};
 		       $scope.programme = {};
 
@@ -17,12 +15,14 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 			       {name: "Tomorrow", value: moment().add('d', 1).toJSON()}
 		       ];
 
+		       $scope.channel.list = [];
+		       $scope.channel.map = {};
 		       $scope.programme.list = [];
 
 		       GetChannels(); 
 
 		       $scope.programme.Fetch = function() {
-			       programmes = [];
+			       $scope.programme.list = [];
 
 			       if( angular.isDefined($scope.channel.selected) && angular.isDefined($scope.channel.selectedDay) ) {
 
@@ -31,9 +31,8 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 					       console.log('programme success');
 					       //console.log(data);
 					       angular.forEach(data.data, function(v){
-						       programmes.push(v);
+						       $scope.programme.list.push(v);
 					       });
-					       $scope.programme.list = programmes;
 				       }).error(function(data, status, headers, config) {
 					       console.log('failure',data);
 				       });
@@ -43,11 +42,11 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 		       function GetChannels() {
 			       $http.post('/api/channel',{channel_name: ''}).
 				       success(function(data, status, headers, config) {
-				       console.log('channel success');
+				       //console.log('channel success', data);
 				       angular.forEach(data, function(v){
-					       	channels.push(v);
+					       $scope.channel.list.push(v);
+					       $scope.channel.map[v.Id] = v.DisplayName.Text;
 				       });
-				       $scope.channel.list = channels;
 			       }).error(function(data, status, headers, config) {
 				       console.log('failure',data);
 			       });
@@ -55,6 +54,38 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 
 	       }]
 	      );
+
+	      /*
+	      app.filter('channelFilter', function() {
+		      return function(items, str) {
+			      if( !angular.isDefined(items) ) {
+				      return
+			      }
+			      if ( !angular.isDefined(str) ) {
+				      return items
+			      }
+			      var result = {};
+			      var sortable = [];
+			      angular.forEach(items, function(value, key) {
+				      if( value.DisplayName.Text.toLowerCase().indexOf(str.toLowerCase()) != -1 ) {
+					      sortable.push(value);
+				      }
+			      });
+			      //console.log("before: ",sortable);
+			      sortable.sort(function(a, b) {
+				      if( a.DisplayName.Text.toLowerCase() < b.DisplayName.Text.toLowerCase() ) return -1;
+				      if( a.DisplayName.Text.toLowerCase() > b.DisplayName.Text.toLowerCase() ) return 1;
+				      return 0;
+			      });
+			      //console.log("after: ",sortable);
+			      for(var i in sortable){
+				      var v = sortable[i];
+				      result[v.Id] = v;
+			      }
+			      return result;
+		      };
+	      });
+	     */
 
 app.filter('channelFilter', function() {
 	return function(input, str) {

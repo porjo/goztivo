@@ -49,20 +49,21 @@
 		</div>
 		<div class="row">
 			<div class="col-md-8 col-md-offset-2">
-				<table class="table">
-					<li ng-repeat="c in programme.list" class="list-group-item">
-						<div class="panel panel-default">
-							<div class="panel-heading">
-					<p>{{c.channel}}</p>
-							</div>
-					<ul>
-						<li ng-repeat="p in c.programme" class="list-group-item">
-						<p>{{p.title}}: {{p.description}}</p>
-						</li>
-					</ul>
-					</li>
-				</ul>
-
+				<div ng-repeat="c in programme.list">
+					<h2>{{channel.map[c.channel]}}</h2>
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>Title</th><th>Start Time</th><th>Stop Time</th><th>Description</th><th>Rating</th>
+							</tr>	
+						</thead>
+						<tbody>
+						<tr ng-repeat="p in c.programme">
+							<td>{{p.title}}</td><td>{{p.start_time}}</td><td>{{p.stop_time}}</td><td>{{p.description}}</td><td>{{p.rating}}</td>
+						</tr>
+						</tbody>
+					</table>
+				</div>
 			</div>
 		</div>
 	</div>

@@ -22,8 +22,10 @@ type ProgrammeRequest struct {
 	// JSON date string as output by Date.toJSON()
 	// e.g. 2012-04-23T18:25:43.511Z
 	Days []time.Time `json:"days"`
+
 	// Hours since midnight (24 hr time)
 	Hours []int `json:"hours"`
+
 	// Channel ID string
 	Channels []string `json:"channels"`
 }
@@ -264,8 +266,8 @@ func (pr ProgrammeRequest) buildFileList() (fileRequests []FileRequest, err erro
 	return
 }
 
-func(tlist TimeList) contains(t time.Time) bool {
-	for _,x := range tlist {
+func (tlist TimeList) contains(t time.Time) bool {
+	for _, x := range tlist {
 		if t.Equal(x) {
 			return true
 		}
