@@ -17,31 +17,27 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 			       {name: "Tomorrow", value: moment().add('d', 1).toJSON()}
 		       ];
 
-		       $scope.channel.selectedDay = $scope.channel.days[0];
-
 		       $scope.programme.list = [];
-
 
 		       GetChannels(); 
 
-		       $scope.channel.Select = function() {
-			       console.log("select ", $scope.channel.selected);
-		       }
-		       $scope.channel.SelectDay = function() {
+		       $scope.programme.Fetch = function() {
 			       programmes = [];
-			       console.log("select day", $scope.channel.selectedDay);
 
-			       $http.post('/api/programme',{channels: $scope.channel.selected, days: $scope.channel.selectedDay}).
-				       success(function(data, status, headers, config) {
-				       console.log('programme success');
-				       //console.log(data);
-				       angular.forEach(data.data, function(v){
-					       	programmes.push(v);
+			       if( angular.isDefined($scope.channel.selected) && angular.isDefined($scope.channel.selectedDay) ) {
+
+				       $http.post('/api/programme',{channels: $scope.channel.selected, days: $scope.channel.selectedDay}).
+					       success(function(data, status, headers, config) {
+					       console.log('programme success');
+					       //console.log(data);
+					       angular.forEach(data.data, function(v){
+						       programmes.push(v);
+					       });
+					       $scope.programme.list = programmes;
+				       }).error(function(data, status, headers, config) {
+					       console.log('failure',data);
 				       });
-				       $scope.programme.list = programmes;
-			       }).error(function(data, status, headers, config) {
-				       console.log('failure',data);
-			       });
+			       }
 		       }
 
 		       function GetChannels() {

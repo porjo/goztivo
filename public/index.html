@@ -18,24 +18,30 @@
 				<h1>Goztivo</h1>
 				<div class="row">
 					<div class="col-md-3">
-
-						<h2>Channels</h2>
-
-						<form role="form" name="channelForm" class="well" novalidate>
-							<div class="form-group">
-								<input type="text" placeholder="Enter channel name" class="form-control" ng-model="channel.query">
-								<select size=10 class="form-control" ng-model="channel.selected" ng-change="channel.Select()" ng-options="c.Id as c.DisplayName.Text for c in channel.list | channelFilter:channel.query" multiple></select>
-								{{channel.selected}}
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h2>Channels</h2>
 							</div>
-						</form>
+							<div class="panel-body">
+
+								<input type="text" placeholder="Enter channel name" class="form-control" ng-model="channel.query">
+								<select size=10 class="form-control" ng-model="channel.selected" ng-options="c.Id as c.DisplayName.Text for c in channel.list | channelFilter:channel.query" multiple></select>
+							</div>
+						</div>
 
 					</div>
 					<div class="col-md-3">
-						<h2>Days</h2>
-						<select size=10 class="form-control" ng-model="channel.selectedDay" ng-change="channel.SelectDay()" ng-options="d.value as d.name for d in channel.days" multiple></select>
-
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h2>Days</h2>
+							</div>
+							<div class="panel-body">
+								<select size=10 class="form-control" ng-model="channel.selectedDay" ng-options="d.value as d.name for d in channel.days" multiple></select>
+							</div>
+						</div>
 					</div>
 					<div class="col-md-3">
+						<button type="button" class="btn btn-primary" ng-click="programme.Fetch()">Fetch</button>
 					</div>
 
 				</div>
@@ -43,9 +49,12 @@
 		</div>
 		<div class="row">
 			<div class="col-md-8 col-md-offset-2">
-				<ul class="list-group">
+				<table class="table">
 					<li ng-repeat="c in programme.list" class="list-group-item">
+						<div class="panel panel-default">
+							<div class="panel-heading">
 					<p>{{c.channel}}</p>
+							</div>
 					<ul>
 						<li ng-repeat="p in c.programme" class="list-group-item">
 						<p>{{p.title}}: {{p.description}}</p>

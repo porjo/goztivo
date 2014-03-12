@@ -5,15 +5,17 @@ import (
 	"time"
 )
 
+type TimeList []time.Time
+
 type Channel struct {
 	Id          string `xml:"id,attr"`
 	DisplayName struct {
 		Text string `xml:",innerxml"`
 		Lang string `xml:"lang,attr"`
 	} `xml:"display-name"`
-	BaseURL  []string           `xml:"base-url" json:"-"`
-	DataFor  []string           `xml:"datafor" json:"-"`
-	DataForT map[time.Time]bool `xml:"-" json:"-"`
+	BaseURL  []string `xml:"base-url" json:"-"`
+	DataFor  []string `xml:"datafor" json:"-"`
+	DataForT TimeList `xml:"-" json:"-"`
 }
 
 type DataList struct {
@@ -55,15 +57,13 @@ const (
 // Convert time strings to time.Time
 func (d *DataList) parseDataFor() {
 	for _, channel := range d.Channels {
-		if channel.DataForT == nil {
-			channel.DataForT = make(map[time.Time]bool)
-		}
+		channel.DataForT = nil
 		for _, df := range channel.DataFor {
 			t, err := time.Parse("2006-01-02", df)
 			if err != nil {
 				log.Println(df, err)
 			} else {
-				channel.DataForT[t] = true
+				channel.DataForT = append(channel.DataForT, t)
 			}
 		}
 

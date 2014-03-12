@@ -88,7 +88,7 @@ func InitAPI(userAgentIn string) error {
 	defer res.Body.Close()
 
 	decoder := xml.NewDecoder(res.Body)
-	decoder.CharsetReader = CharsetReader
+	decoder.CharsetReader = charsetReader
 
 	decoder.Decode(&dataList)
 	if err != nil {
@@ -136,7 +136,7 @@ func ChannelHandler(w http.ResponseWriter, r *http.Request, params martini.Param
 
 		}
 	} else if cr.Contains {
-		channels := make([]*Channel, 0)
+		var channels []*Channel
 		for k, v := range dataList.ChannelMap {
 			if strings.Contains(strings.ToLower(k), strings.ToLower(cr.ChannelName)) {
 				channels = append(channels, v)
@@ -203,9 +203,8 @@ func ProgrammeHandler(w http.ResponseWriter, r *http.Request, params martini.Par
 
 // Fetch filenames
 func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err error) {
-	channelDays = make([]ChannelDay, 0)
 	client := transport.Client()
-	for _, fileRequest := range fileRequests {
+	for i, fileRequest := range fileRequests {
 
 		var req *http.Request
 		var res *http.Response
@@ -216,6 +215,10 @@ func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err
 			return
 		}
 		req.Header.Set("User-Agent", userAgent)
+		if i > 0 {
+			//Sleep between successive file gets (as per Oztivo usage policy)
+			time.Sleep(time.Second * 1)
+		}
 		log.Println("Fetching URL: " + url)
 		res, err = client.Do(req)
 		if err != nil {
@@ -227,7 +230,7 @@ func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err
 			return
 		}
 		decoder := xml.NewDecoder(res.Body)
-		decoder.CharsetReader = CharsetReader
+		decoder.CharsetReader = charsetReader
 		channelDay := ChannelDay{}
 		channelDay.Channel = fileRequest.Channel
 		err = decoder.Decode(&channelDay)
@@ -242,14 +245,13 @@ func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err
 }
 
 func (pr ProgrammeRequest) buildFileList() (fileRequests []FileRequest, err error) {
-	fileRequests = make([]FileRequest, 0)
 	for _, channelr := range pr.Channels {
 		channel := dataList.ChannelMap[channelr]
 		if channel != nil {
 			for _, dayr := range pr.Days {
 				dayrMidnight := time.Date(dayr.Year(), dayr.Month(), dayr.Day(), 0, 0, 0, 0, dayr.Location())
-				day := channel.DataForT[dayrMidnight]
-				if day {
+
+				if channel.DataForT.contains(dayrMidnight) {
 					filename := channel.Id + "_" + dayrMidnight.Format("2006-01-02") + ".xml.gz"
 					fileRequest := FileRequest{channelr, filename}
 					fileRequests = append(fileRequests, fileRequest)
@@ -262,7 +264,16 @@ func (pr ProgrammeRequest) buildFileList() (fileRequests []FileRequest, err erro
 	return
 }
 
-func CharsetReader(charset string, input io.Reader) (io.Reader, error) {
+func(tlist TimeList) contains(t time.Time) bool {
+	for _,x := range tlist {
+		if t.Equal(x) {
+			return true
+		}
+	}
+	return false
+}
+
+func charsetReader(charset string, input io.Reader) (io.Reader, error) {
 	// Windows-1252 is a superset of ISO-8859-1.
 	if strings.ToLower(charset) == "iso-8859-1" {
 		return transform.NewReader(input, charmap.Windows1252.NewDecoder()), nil
