@@ -23,16 +23,14 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 
 		       $scope.programme.Fetch = function() {
 			       $scope.programme.list = [];
-
 			       if( angular.isDefined($scope.channel.selected) && angular.isDefined($scope.channel.selectedDay) ) {
-
 				       $http.post('/api/programme',{channels: $scope.channel.selected, days: $scope.channel.selectedDay}).
 					       success(function(data, status, headers, config) {
-					       console.log('programme success');
-					       //console.log(data);
+					       //console.log('programme success', data);
 					       angular.forEach(data.data, function(v){
 						       $scope.programme.list.push(v);
 					       });
+					       //console.log('programmes: ', $scope.programme.list);
 				       }).error(function(data, status, headers, config) {
 					       console.log('failure',data);
 				       });
@@ -45,7 +43,7 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 				       //console.log('channel success', data);
 				       angular.forEach(data, function(v){
 					       $scope.channel.list.push(v);
-					       $scope.channel.map[v.Id] = v.DisplayName.Text;
+					       $scope.channel.map[v.id] = v.display_name.text;
 				       });
 			       }).error(function(data, status, headers, config) {
 				       console.log('failure',data);
@@ -55,37 +53,13 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 	       }]
 	      );
 
-	      /*
-	      app.filter('channelFilter', function() {
-		      return function(items, str) {
-			      if( !angular.isDefined(items) ) {
-				      return
-			      }
-			      if ( !angular.isDefined(str) ) {
-				      return items
-			      }
-			      var result = {};
-			      var sortable = [];
-			      angular.forEach(items, function(value, key) {
-				      if( value.DisplayName.Text.toLowerCase().indexOf(str.toLowerCase()) != -1 ) {
-					      sortable.push(value);
-				      }
-			      });
-			      //console.log("before: ",sortable);
-			      sortable.sort(function(a, b) {
-				      if( a.DisplayName.Text.toLowerCase() < b.DisplayName.Text.toLowerCase() ) return -1;
-				      if( a.DisplayName.Text.toLowerCase() > b.DisplayName.Text.toLowerCase() ) return 1;
-				      return 0;
-			      });
-			      //console.log("after: ",sortable);
-			      for(var i in sortable){
-				      var v = sortable[i];
-				      result[v.Id] = v;
-			      }
-			      return result;
-		      };
-	      });
-	     */
+app.filter('dateFilter', function() {
+	return function(input) {
+		var date = moment(input).calendar();
+		//console.log('input, date:',input,date);
+		return date;
+	}
+});
 
 app.filter('channelFilter', function() {
 	return function(input, str) {
@@ -93,7 +67,7 @@ app.filter('channelFilter', function() {
 			var array = [];
 			if ( angular.isDefined(str) ) {
 				for( var i=0; i< input.length; i++) {
-					if( input[i].DisplayName.Text.toLowerCase().indexOf(str.toLowerCase()) != -1 ) {
+					if( input[i].display_name.text.toLowerCase().indexOf(str.toLowerCase()) != -1 ) {
 						array.push(input[i]);
 					}
 				}
@@ -101,8 +75,8 @@ app.filter('channelFilter', function() {
 				array = input;
 			}
 			array.sort(function(a, b){
-				if( a.DisplayName.Text.toLowerCase() < b.DisplayName.Text.toLowerCase() ) return -1;
-				if( a.DisplayName.Text.toLowerCase() > b.DisplayName.Text.toLowerCase() ) return 1;
+				if( a.display_name.text.toLowerCase() < b.display_name.text.toLowerCase() ) return -1;
+				if( a.display_name.text.toLowerCase() > b.display_name.text.toLowerCase() ) return 1;
 				return 0;
 			});
 			return array;

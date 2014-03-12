@@ -8,11 +8,11 @@ import (
 type TimeList []time.Time
 
 type Channel struct {
-	Id          string `xml:"id,attr"`
+	Id          string `xml:"id,attr" json:"id"`
 	DisplayName struct {
-		Text string `xml:",innerxml"`
-		Lang string `xml:"lang,attr"`
-	} `xml:"display-name"`
+		Text string `xml:",innerxml" json:"text"`
+		Lang string `xml:"lang,attr" json:"lang"`
+	} `xml:"display-name" json:"display_name"`
 	BaseURL  []string `xml:"base-url" json:"-"`
 	DataFor  []string `xml:"datafor" json:"-"`
 	DataForT TimeList `xml:"-" json:"-"`
@@ -45,8 +45,8 @@ type Programme struct {
 }
 
 type ChannelDay struct {
-	ChannelName string       `xml:"-" json:"channel_name"`
-	Programmes  []*Programme `xml:"programme" json:"programme"`
+	ChannelId  string       `xml:"-" json:"id"`
+	Programmes []*Programme `xml:"programme" json:"programme"`
 }
 
 const (
@@ -59,7 +59,12 @@ func (d *DataList) parseDataFor() {
 	for _, channel := range d.Channels {
 		channel.DataForT = nil
 		for _, df := range channel.DataFor {
-			t, err := time.Parse("2006-01-02", df)
+			tz, err := time.Parse("2006-01-02", df)
+			loc,err := time.LoadLocation("Australia/Sydney")
+			if err != nil {
+				panic("Could not load timezone location")
+			}
+			t := time.Date(tz.Year(), tz.Month(), tz.Day(), 0, 0, 0, 0, loc)
 			if err != nil {
 				log.Println(df, err)
 			} else {

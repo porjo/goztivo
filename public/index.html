@@ -25,7 +25,7 @@
 							<div class="panel-body">
 
 								<input type="text" placeholder="Enter channel name" class="form-control" ng-model="channel.query">
-								<select size=10 class="form-control" ng-model="channel.selected" ng-options="c.Id as c.DisplayName.Text for c in channel.list | channelFilter:channel.query" multiple></select>
+								<select size=10 class="form-control" ng-model="channel.selected" ng-options="c.id as c.display_name.text for c in channel.list | channelFilter:channel.query" multiple></select>
 							</div>
 						</div>
 
@@ -49,20 +49,23 @@
 		</div>
 		<div class="row">
 			<div class="col-md-8 col-md-offset-2">
-				<div ng-repeat="c in programme.list">
-					<h2>{{channel.map[c.channel]}}</h2>
-					<table class="table table-striped">
-						<thead>
-							<tr>
-								<th>Title</th><th>Start Time</th><th>Stop Time</th><th>Description</th><th>Rating</th>
-							</tr>	
-						</thead>
-						<tbody>
-						<tr ng-repeat="p in c.programme">
-							<td>{{p.title}}</td><td>{{p.start_time}}</td><td>{{p.stop_time}}</td><td>{{p.description}}</td><td>{{p.rating}}</td>
-						</tr>
-						</tbody>
-					</table>
+				<div ng-show="programme.list.length">
+					<p>* Times are in local time</p>
+					<div ng-repeat="c in programme.list">
+						<h2>{{channel.map[c.id]}}</h2>
+						<table class="table table-striped">
+							<thead>
+								<tr>
+									<th>Title</th><th>Start Time</th><th>Stop Time</th><th>Description</th><th>Rating</th>
+								</tr>	
+							</thead>
+							<tbody>
+							<tr ng-repeat="p in c.programme">
+								<td>{{p.title}}</td><td>{{p.start_time | dateFilter}}</td><td>{{p.stop_time | dateFilter}}</td><td>{{p.description}}</td><td>{{p.rating}}</td>
+							</tr>
+							</tbody>
+						</table>
+					</div>
 				</div>
 			</div>
 		</div>

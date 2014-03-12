@@ -234,7 +234,7 @@ func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err
 		decoder := xml.NewDecoder(res.Body)
 		decoder.CharsetReader = charsetReader
 		channelDay := ChannelDay{}
-		channelDay.Channel = fileRequest.Channel
+		channelDay.ChannelId = fileRequest.Channel
 		err = decoder.Decode(&channelDay)
 		if err != nil {
 			res.Body.Close()
@@ -268,6 +268,7 @@ func (pr ProgrammeRequest) buildFileList() (fileRequests []FileRequest, err erro
 
 func (tlist TimeList) contains(t time.Time) bool {
 	for _, x := range tlist {
+		log.Printf("container %s continee %s\n", x, t)
 		if t.Equal(x) {
 			return true
 		}
