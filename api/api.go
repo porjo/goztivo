@@ -68,7 +68,11 @@ var (
 	transport     *httpcache.Transport
 	client        *http.Client
 	userAgent     string
+	// Lock client access to enforce one request
+	// at a time to the upstream server
 	clientLock    *sync.Mutex
+	// Keep track of when we last fetched, to keep
+	// our upstream requests spaced apart
 	lastFetch time.Time
 )
 
@@ -79,11 +83,15 @@ func InitAPI(userAgentIn string) {
 	client = transport.Client()
 	clientLock = &sync.Mutex{}
 	lastFetch = time.Now()
+	dataList = &DataList{}
+	dataList.Mutex = &sync.Mutex{}
 
 	go func() {
 
 		for {
+			dataList.Mutex.Lock()
 			err := GetDataList()
+			dataList.Mutex.Unlock()
 			if err != nil {
 				log.Println(err)
 				return
@@ -96,7 +104,9 @@ func InitAPI(userAgentIn string) {
 }
 
 func GetDataList() error {
-	dataList = &DataList{}
+
+	dataList.Channels = nil
+	dataList.ChannelMap = nil
 
 	req, err := http.NewRequest("GET", DataListFile, nil)
 	if err != nil {
@@ -122,7 +132,6 @@ func GetDataList() error {
 
 	dataList.parseDataFor()
 	dataList.buildChannelMap()
-	//fmt.Printf("%v\n", dataList.ChannelMap)
 
 	return nil
 }
@@ -149,7 +158,10 @@ func ChannelHandler(w http.ResponseWriter, r *http.Request, params martini.Param
 		}
 	}
 
-	log.Printf("Channel Request: %+v\n", cr)
+	log.Printf("Channel request: %+v\n", cr)
+
+	dataList.Mutex.Lock()
+	defer dataList.Mutex.Unlock()
 
 	if cr.ChannelName == "" {
 		if len(dataList.ChannelMap) < ResponseLimit {
@@ -192,6 +204,8 @@ func ProgrammeHandler(w http.ResponseWriter, r *http.Request, params martini.Par
 		WriteJsonRes(w, apiResponse, http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("Programme request: %+v\n", pr)
 
 	fileRequests, err := pr.buildFileList()
 	if err != nil {
@@ -275,10 +289,11 @@ func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err
 
 func (pr ProgrammeRequest) buildFileList() (fileRequests []FileRequest, err error) {
 	for _, channelr := range pr.Channels {
+		dataList.Mutex.Lock()
 		channel := dataList.ChannelMap[channelr]
+		dataList.Mutex.Unlock()
 		if channel != nil {
 			for _, dayr := range pr.Days {
-				log.Printf("dayr %v loc %v\n", dayr, dayr.Location())
 				if channel.DataForT.contains(dayr) {
 					filename := channel.Id + "_" + dayr.Format("2006-01-02") + ".xml.gz"
 					fileRequest := FileRequest{channelr, filename}

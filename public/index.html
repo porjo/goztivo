@@ -24,8 +24,8 @@
 							</div>
 							<div class="panel-body">
 
-								<input type="text" placeholder="Enter channel name" class="form-control" ng-model="channel.query">
-								<select size=10 class="form-control" ng-model="channel.selected" ng-options="c.id as c.display_name.text for c in channel.list | channelFilter:channel.query" multiple></select>
+								<select size=10 class="form-control" ng-model="channel.selectedChannel" ng-change="programme.Fetch()" ng-options="c.id as c.display_name.text for c in channel.list | channelFilter:channel.query" multiple></select>
+								<input type="text" placeholder="Filter channels" class="form-control" ng-model="channel.query">
 							</div>
 						</div>
 
@@ -36,14 +36,20 @@
 								<h2>Days</h2>
 							</div>
 							<div class="panel-body">
-								<select size=10 class="form-control" ng-model="channel.selectedDay" ng-options="d.value as d.name for d in channel.days" multiple></select>
+								<select size=10 class="form-control" ng-model="channel.selectedDay" ng-change="programme.Fetch()" ng-options="d.value as d.text for d in channel.days" multiple></select>
 							</div>
 						</div>
 					</div>
 					<div class="col-md-3">
-						<button type="button" class="btn btn-primary" ng-click="programme.Fetch()">Fetch</button>
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h2>Hours</h2>
+							</div>
+							<div class="panel-body">
+								<select size=10 class="form-control" ng-model="channel.selectedHour" ng-options="h.value as h.text for h in channel.hours" multiple></select>
+							</div>
+						</div>
 					</div>
-
 				</div>
 			</div>
 		</div>
@@ -67,8 +73,33 @@
 								</tr>	
 							</thead>
 							<tbody>
-							<tr ng-repeat="p in c.programme">
-								<td>{{p.title}}</td><td width="100px">{{p.start_time | dateFilter:"h:mm a"}}</td><td width="100px">{{p.stop_time | dateFilter:"h:mm a"}}</td><td>{{p.description}}</td>
+							<tr ng-repeat="p in c.programme | programmeFilter:channel.selectedHour">
+								<td>{{p.title}}</td><td width="100px">{{p.start_time | dateFilter:"h:mm a"}}</td><td width="100px">{{p.stop_time | dateFilter:"h:mm a"}}</td>
+								<td>
+									{{p.description | truncateFilter:100}} 
+
+									<span ng-if="p.description.length > 100">
+										<a data-toggle="modal" data-target="#desc-{{$index}}">[more]</a>
+
+										<div class="modal fade" id="desc-{{$index}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">>
+											<div class="modal-dialog">
+												<div class="modal-content">
+													<div class="modal-header">
+														<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+														<h4 class="modal-title">{{p.title}}</h4>
+													</div>
+													<div class="modal-body">
+														<p>{{p.description}}</p>
+													</div>
+													<div class="modal-footer">
+														<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+													</div>
+												</div><!-- /.modal-content -->
+											</div><!-- /.modal-dialog -->
+										</div><!-- /.modal -->
+									</span>
+
+								</td>
 								<td>
 									<div ng-repeat="r in p.rating">
 										{{r.value}}

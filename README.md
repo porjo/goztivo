@@ -9,8 +9,9 @@ Goztivo has 2 components:
 * an API server backend written in Golang. This also doubles as a general purpose web server
 to server the HTML/JS content
 
-Goztivo aims to follow Oztivo's usage policy where possible by sending a unique HTTP user-agent string
-and keeping traffic to a minimum by caching data
+Goztivo aims to follow Oztivo's usage policy where possible by sending a unique HTTP 
+user-agent string and keeping traffic to a minimum by caching data and limiting upstream 
+requests to a maximum of one HTTP connection per second.
 
 ## Quick start
 

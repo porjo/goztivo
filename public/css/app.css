@@ -1,2 +1,5 @@
 /* app css stylesheet */
 
+a:hover {
+	cursor: pointer;
+}

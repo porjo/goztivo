@@ -10,22 +10,30 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 		       $scope.channel = {};
 		       $scope.programme = {};
 
+		       var m = moment();
 		       $scope.channel.days = [
-			       {name: "Today", value: moment().toJSON()},
-			       {name: "Tomorrow", value: moment().add('d', 1).toJSON()}
+			       {text: m.calendar(), value: m.toJSON()},
+			       {text: m.add('d',1).calendar(), value: m.add('d', 1).toJSON()}
 		       ];
 
+		       BuildHourList();
+
 		       $scope.channel.list = [];
+		       $scope.channel.selectedChannel = [];
+		       $scope.channel.selectedDay = [];
 		       $scope.channel.map = {};
 		       $scope.programme.list = [];
 
 		       GetChannels(); 
 
 		       $scope.programme.Fetch = function() {
-			       $scope.programme.list = [];
-			       if( angular.isDefined($scope.channel.selected) && angular.isDefined($scope.channel.selectedDay) ) {
-				       $http.post('/api/programme',{channels: $scope.channel.selected, days: $scope.channel.selectedDay}).
+			       if($scope.channel.selectedChannel.length == 0 || $scope.channel.selectedDay.length == 0) {
+				       return;
+			       }
+			       if( angular.isDefined($scope.channel.selectedChannel) && angular.isDefined($scope.channel.selectedDay) ) {
+				       $http.post('/api/programme',{channels: $scope.channel.selectedChannel, days: $scope.channel.selectedDay}).
 					       success(function(data, status, headers, config) {
+					       $scope.programme.list = [];
 					       //console.log('programme success', data);
 					       angular.forEach(data.data, function(v){
 						       $scope.programme.list.push(v);
@@ -50,13 +58,30 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 			       });
 		       }
 
+		       function BuildHourList() {
+			       var mdt = moment().hour(0).minute(0);
+			       $scope.channel.hours = [];
+			       for( var i=0; i<24; i++) {
+				       var tmp = mdt;
+				       var text = mdt.format("HH:mm");
+				       var hour = {}
+				       hour.value = mdt.toJSON()
+				       mdt.add('h',1).toJSON();
+				       text += "-" + mdt.format("HH:mm");
+				       hour.text = text;
+				       $scope.channel.hours.push(hour);
+				       if(tmp.hour() == moment().hour()){
+					       $scope.channel.selectedHour = hour;
+				       }
+			       }
+		       }
+
 	       }]
 	      );
 
 app.filter('dateFilter', function() {
 	return function(input,format) {
 		var date = moment(input).format(format);
-		console.log('input, date:',input,date);
 		return date;
 	}
 });
@@ -82,4 +107,41 @@ app.filter('channelFilter', function() {
 			return array;
 		}
 	};
+});
+
+app.filter('truncateFilter', function() {
+	return function(input, count) {
+		if( angular.isDefined(input) ) {
+			if( input.length > 100 ) {
+				return input.substring(0,100) + "...";
+			}
+			return input;
+		}
+	}
+});
+
+app.filter('programmeFilter', function() {
+	return function(input, hours) {
+		if( !angular.isDefined(input) ) {
+			return 
+		}
+		if( angular.isDefined(hours) ) {
+			if(hours.length == 0) {	return input; }
+			var pmap = {};
+			for( var i in input) {
+				var pm = moment(input[i].start_time);
+				for(var j=0; j<hours.length; j++) {
+					var hm = moment(hours[j]);
+					if(pm.hour() == hm.hour()) {
+						pmap[input[i].title] = input[i];
+					}
+				}
+			}
+			var programmes = [];
+			for( var p in pmap) {
+				programmes.push(pmap[p]);
+			}
+			return programmes;
+		}
+	}
 });

@@ -2,6 +2,7 @@ package api
 
 import (
 	"log"
+	"sync"
 	"time"
 )
 
@@ -21,7 +22,8 @@ type Channel struct {
 type DataList struct {
 	Channels []*Channel `xml:"channel"`
 	// Maps channel id to channel
-	ChannelMap map[string]*Channel `-`
+	ChannelMap map[string]*Channel `xml:"-"`
+	Mutex       *sync.Mutex
 }
 
 type Programme struct {
