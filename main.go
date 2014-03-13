@@ -14,16 +14,15 @@ import (
 
 const (
 	NAME    = "Goztivo"
-	VERSION = "0.1"
+	VERSION = "0.2"
 )
 
 func main() {
 	log.Println(NAME + " Starting")
 
-	err := api.InitAPI(NAME + "/" + VERSION)
-	if err != nil {
-		log.Fatal(err)
-	}
+	agentString := NAME + "/" + VERSION
+	api.InitAPI(agentString)
+
 	m := martini.Classic()
 	m.Post("/api/programme", api.ProgrammeHandler)
 	m.Post("/api/channel", api.ChannelHandler)

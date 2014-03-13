@@ -54,9 +54,9 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 	      );
 
 app.filter('dateFilter', function() {
-	return function(input) {
-		var date = moment(input).calendar();
-		//console.log('input, date:',input,date);
+	return function(input,format) {
+		var date = moment(input).format(format);
+		console.log('input, date:',input,date);
 		return date;
 	}
 });

@@ -1,4 +1,4 @@
-goztivo
+Goztivo
 =======
 
 A web API wrapper for [Oztivo](http://www.oztivo.net) - a TV guide database for Australia
@@ -21,5 +21,7 @@ To run Goztivo on Linux, first install Golang. On Redhat systems that should be 
 - Run Goztivo `go run main.go`
 - Browse to your IP on port `3000` e.g. `http://localhost:3000`
 
+## Licence
 
-**NOTE:** This project is alpha 
+Goztivo is under The MIT license. TV guide data from Oztivo is under Creative Commons ([CC by-nc-sa](http://creativecommons.org/licenses/by-nc-sa/2.5/au/)) and not for commercial use.
+

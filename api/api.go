@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"code.google.com/p/go.text/encoding/charmap"
@@ -65,25 +66,47 @@ var (
 	dataList      *DataList
 	ResponseLimit int = 500
 	transport     *httpcache.Transport
+	client        *http.Client
 	userAgent     string
+	clientLock    *sync.Mutex
+	lastFetch time.Time
 )
 
-func InitAPI(userAgentIn string) error {
+func InitAPI(userAgentIn string) {
 
 	userAgent = userAgentIn
+	transport = httpcache.NewMemoryCacheTransport()
+	client = transport.Client()
+	clientLock = &sync.Mutex{}
+	lastFetch = time.Now()
+
+	go func() {
+
+		for {
+			err := GetDataList()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			time.Sleep(time.Hour * 24)
+		}
+
+	}()
+}
+
+func GetDataList() error {
 	dataList = &DataList{}
 
-	//		dataList.Channels = append(dataList.Channels, &Channel{Id: "7A", DataFor: []string{"2014-03-08", "2014-03-09", "2014-03-10"}}, &Channel{Id: "10C", DataFor: []string{"2014-03-08", "2014-03-09", "2014-03-10"}}, &Channel{Id: "9B", DataFor: []string{"2014-03-08", "2014-03-09", "2014-03-10"}})
-
-	transport = httpcache.NewMemoryCacheTransport()
-	client := transport.Client()
 	req, err := http.NewRequest("GET", DataListFile, nil)
 	if err != nil {
 		return err
 	}
 	req.Header.Set("User-Agent", userAgent)
 	log.Println("Requesting datalist: " + DataListFile)
+	clientLock.Lock()
 	res, err := client.Do(req)
+	clientLock.Unlock()
 	if err != nil {
 		return err
 	}
@@ -206,7 +229,7 @@ func ProgrammeHandler(w http.ResponseWriter, r *http.Request, params martini.Par
 // Fetch filenames
 func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err error) {
 	client := transport.Client()
-	for i, fileRequest := range fileRequests {
+	for _, fileRequest := range fileRequests {
 
 		var req *http.Request
 		var res *http.Response
@@ -217,12 +240,16 @@ func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err
 			return
 		}
 		req.Header.Set("User-Agent", userAgent)
-		if i > 0 {
+		clientLock.Lock()
+		if time.Since(lastFetch) < time.Second {
+			log.Println("Fetching too quickly, sleeping...")
 			//Sleep between successive file gets (as per Oztivo usage policy)
 			time.Sleep(time.Second * 1)
 		}
 		log.Println("Fetching URL: " + url)
 		res, err = client.Do(req)
+		clientLock.Unlock()
+		lastFetch = time.Now()
 		if err != nil {
 			return
 		}
@@ -251,10 +278,9 @@ func (pr ProgrammeRequest) buildFileList() (fileRequests []FileRequest, err erro
 		channel := dataList.ChannelMap[channelr]
 		if channel != nil {
 			for _, dayr := range pr.Days {
-				dayrMidnight := time.Date(dayr.Year(), dayr.Month(), dayr.Day(), 0, 0, 0, 0, dayr.Location())
-
-				if channel.DataForT.contains(dayrMidnight) {
-					filename := channel.Id + "_" + dayrMidnight.Format("2006-01-02") + ".xml.gz"
+				log.Printf("dayr %v loc %v\n", dayr, dayr.Location())
+				if channel.DataForT.contains(dayr) {
+					filename := channel.Id + "_" + dayr.Format("2006-01-02") + ".xml.gz"
 					fileRequest := FileRequest{channelr, filename}
 					fileRequests = append(fileRequests, fileRequest)
 				}
@@ -268,8 +294,10 @@ func (pr ProgrammeRequest) buildFileList() (fileRequests []FileRequest, err erro
 
 func (tlist TimeList) contains(t time.Time) bool {
 	for _, x := range tlist {
-		log.Printf("container %s continee %s\n", x, t)
-		if t.Equal(x) {
+		startOfDay := time.Date(x.Year(), x.Month(), x.Day(), 0, 0, 0, 0, x.Location())
+		endOfDay := time.Date(x.Year(), x.Month(), x.Day(), 23, 59, 59, 99999, x.Location())
+
+		if (t.After(startOfDay) || t.Equal(startOfDay)) && (t.Before(endOfDay) || t.Equal(endOfDay)) {
 			return true
 		}
 	}

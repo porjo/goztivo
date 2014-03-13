@@ -33,15 +33,15 @@ type Programme struct {
 	SubTitle    string    `xml:"sub-title" json:"subtitle"`
 	Description string    `xml:"desc" json:"description"`
 	Credits     []struct {
-		Actor string `xml:"actor"`
-	} `xml:"credits"`
-	Category []string `xml:"category"`
+		Actor string `xml:"actor" json:"actor,omitempty"`
+	} `xml:"credits" json:"credits,omitempty"`
+	Category []string `xml:"category" json:"category,omitempty"`
 	Rating   []struct {
-		Value string `xml:"value"`
-	} `xml:"rating"`
+		Value string `xml:"value" json:"value,omitempty"`
+	} `xml:"rating" json:"rating,omitempty"`
 	StarRating []struct {
-		Value string `xml:"value"`
-	} `xml:"star-rating" json:"star_rating"`
+		Value string `xml:"value" json"value,omitempty"`
+	} `xml:"star-rating" json:"star_rating,omitempty"`
 }
 
 type ChannelDay struct {
@@ -59,8 +59,9 @@ func (d *DataList) parseDataFor() {
 	for _, channel := range d.Channels {
 		channel.DataForT = nil
 		for _, df := range channel.DataFor {
+			// Dates are relative to AEST (I presume)
 			tz, err := time.Parse("2006-01-02", df)
-			loc,err := time.LoadLocation("Australia/Sydney")
+			loc, err := time.LoadLocation("Australia/Sydney")
 			if err != nil {
 				panic("Could not load timezone location")
 			}

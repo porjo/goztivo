@@ -52,7 +52,14 @@
 				<div ng-show="programme.list.length">
 					<p>* Times are in local time</p>
 					<div ng-repeat="c in programme.list">
-						<h2>{{channel.map[c.id]}}</h2>
+						<div class="row">
+							<div class="col-md-6">
+								<h2>{{channel.map[c.id]}}</h2>
+							</div>
+							<div class="col-md-6">
+								<h3>{{channel.selectedDay[0] | dateFilter:"dddd, MMMM Do YYYY"}}</h2>
+							</div>
+						</div>
 						<table class="table table-striped">
 							<thead>
 								<tr>
@@ -61,7 +68,12 @@
 							</thead>
 							<tbody>
 							<tr ng-repeat="p in c.programme">
-								<td>{{p.title}}</td><td>{{p.start_time | dateFilter}}</td><td>{{p.stop_time | dateFilter}}</td><td>{{p.description}}</td><td>{{p.rating}}</td>
+								<td>{{p.title}}</td><td width="100px">{{p.start_time | dateFilter:"h:mm a"}}</td><td width="100px">{{p.stop_time | dateFilter:"h:mm a"}}</td><td>{{p.description}}</td>
+								<td>
+									<div ng-repeat="r in p.rating">
+										{{r.value}}
+									</div>
+								</td>
 							</tr>
 							</tbody>
 						</table>
