@@ -24,9 +24,6 @@ type ProgrammeRequest struct {
 	// e.g. 2012-04-23T18:25:43.511Z
 	Days []time.Time `json:"days"`
 
-	// Hours since midnight (24 hr time)
-	Hours []int `json:"hours"`
-
 	// Channel ID string
 	Channels []string `json:"channels"`
 }
@@ -60,6 +57,7 @@ type APIResponse struct {
 type FileRequest struct {
 	Channel  string
 	Filename string
+	Date     time.Time
 }
 
 var (
@@ -70,7 +68,7 @@ var (
 	userAgent     string
 	// Lock client access to enforce one request
 	// at a time to the upstream server
-	clientLock    *sync.Mutex
+	clientLock *sync.Mutex
 	// Keep track of when we last fetched, to keep
 	// our upstream requests spaced apart
 	lastFetch time.Time
@@ -231,10 +229,6 @@ func ProgrammeHandler(w http.ResponseWriter, r *http.Request, params martini.Par
 		return
 	}
 
-	for _, channelDay := range channelDays {
-		channelDay.parseStopStart()
-	}
-
 	apiResponse.Data = &channelDays
 	WriteJsonRes(w, apiResponse, http.StatusOK)
 	return
@@ -281,6 +275,8 @@ func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err
 			res.Body.Close()
 			return
 		}
+		channelDay.parseStopStart()
+		channelDay.Date = fileRequest.Date
 		channelDays = append(channelDays, channelDay)
 		res.Body.Close()
 	}
@@ -293,10 +289,11 @@ func (pr ProgrammeRequest) buildFileList() (fileRequests []FileRequest, err erro
 		channel := dataList.ChannelMap[channelr]
 		dataList.Mutex.Unlock()
 		if channel != nil {
-			for _, dayr := range pr.Days {
-				if channel.DataForT.contains(dayr) {
-					filename := channel.Id + "_" + dayr.Format("2006-01-02") + ".xml.gz"
-					fileRequest := FileRequest{channelr, filename}
+			for _, tz := range pr.Days {
+				if channel.DataForT.contains(tz) {
+					t := tz.Add(time.Hour * 10)
+					filename := channel.Id + "_" + t.Format("2006-01-02") + ".xml.gz"
+					fileRequest := FileRequest{channelr, filename, t}
 					fileRequests = append(fileRequests, fileRequest)
 				}
 			}

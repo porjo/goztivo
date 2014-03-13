@@ -12,8 +12,8 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 
 		       var m = moment();
 		       $scope.channel.days = [
-			       {text: m.calendar(), value: m.toJSON()},
-			       {text: m.add('d',1).calendar(), value: m.add('d', 1).toJSON()}
+			       {text: "Today", value: m.toJSON()},
+			       {text: "Tomorrow", value: m.add('d', 1).toJSON()}
 		       ];
 
 		       BuildHourList();
@@ -38,7 +38,7 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 					       angular.forEach(data.data, function(v){
 						       $scope.programme.list.push(v);
 					       });
-					       //console.log('programmes: ', $scope.programme.list);
+					       console.log('programmes: ', $scope.programme.list);
 				       }).error(function(data, status, headers, config) {
 					       console.log('failure',data);
 				       });
@@ -81,6 +81,7 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 
 app.filter('dateFilter', function() {
 	return function(input,format) {
+		console.log("date:",input,format);
 		var date = moment(input).format(format);
 		return date;
 	}

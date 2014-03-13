@@ -23,7 +23,7 @@ type DataList struct {
 	Channels []*Channel `xml:"channel"`
 	// Maps channel id to channel
 	ChannelMap map[string]*Channel `xml:"-"`
-	Mutex       *sync.Mutex
+	Mutex      *sync.Mutex
 }
 
 type Programme struct {
@@ -48,6 +48,7 @@ type Programme struct {
 
 type ChannelDay struct {
 	ChannelId  string       `xml:"-" json:"id"`
+	Date       time.Time    `xml:"-" json:"date"`
 	Programmes []*Programme `xml:"programme" json:"programme"`
 }
 
