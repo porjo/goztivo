@@ -69,12 +69,15 @@
 						<table class="table table-striped">
 							<thead>
 								<tr>
-									<th>Title</th><th>Start Time</th><th>Stop Time</th><th>Description</th><th>Rating</th>
+									<th>Title</th><th>Start Time</th><th>Stop Time</th><th>Minutes</th><th>Description</th><th>Rating</th>
 								</tr>	
 							</thead>
 							<tbody>
 							<tr ng-repeat="p in c.programme | programmeFilter:channel.selectedHour">
-								<td>{{p.title}}</td><td width="100px">{{p.start_time | dateFilter:"h:mm a"}}</td><td width="100px">{{p.stop_time | dateFilter:"h:mm a"}}</td>
+								<td>{{p.title}}</td>
+								<td width="100px">{{p.start_time | dateFilter:"h:mm a"}}</td>
+								<td width="100px">{{p.stop_time | dateFilter:"h:mm a"}}</td>
+								<td width="100px">{{p.stop_time | dateDiffFilter:p.start_time:'minutes'}}</td>
 								<td>
 									{{p.description | truncateFilter:100}} 
 

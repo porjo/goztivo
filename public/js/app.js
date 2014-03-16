@@ -10,10 +10,14 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 		       $scope.channel = {};
 		       $scope.programme = {};
 
-		       var m = moment();
 		       $scope.channel.days = [
-			       {text: "Today", value: m.toJSON()},
-			       {text: "Tomorrow", value: m.add('d', 1).toJSON()}
+			       {text: "Today", value: moment().toJSON()},
+			       {text: "Tomorrow", value: moment().add('d', 1).toJSON()},
+			       {text: moment().add('d', 2).format("dddd"), value: moment().add('d', 2).toJSON()},
+			       {text: moment().add('d', 3).format("dddd"), value: moment().add('d', 3).toJSON()},
+			       {text: moment().add('d', 4).format("dddd"), value: moment().add('d', 4).toJSON()},
+			       {text: moment().add('d', 5).format("dddd"), value: moment().add('d', 5).toJSON()},
+			       {text: moment().add('d', 6).format("dddd"), value: moment().add('d', 6).toJSON()}
 		       ];
 
 		       BuildHourList();
@@ -38,7 +42,7 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 					       angular.forEach(data.data, function(v){
 						       $scope.programme.list.push(v);
 					       });
-					       console.log('programmes: ', $scope.programme.list);
+					       //console.log('programmes: ', $scope.programme.list);
 				       }).error(function(data, status, headers, config) {
 					       console.log('failure',data);
 				       });
@@ -62,7 +66,6 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 			       var mdt = moment().hour(0).minute(0);
 			       $scope.channel.hours = [];
 			       for( var i=0; i<24; i++) {
-				       var tmp = mdt;
 				       var text = mdt.format("HH:mm");
 				       var hour = {}
 				       hour.value = mdt.toJSON()
@@ -70,8 +73,8 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 				       text += "-" + mdt.format("HH:mm");
 				       hour.text = text;
 				       $scope.channel.hours.push(hour);
-				       if(tmp.hour() == moment().hour()){
-					       $scope.channel.selectedHour = hour;
+				       if(moment().hour() == i){
+					       $scope.channel.selectedHour = [hour.value];
 				       }
 			       }
 		       }
@@ -81,9 +84,15 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 
 app.filter('dateFilter', function() {
 	return function(input,format) {
-		console.log("date:",input,format);
 		var date = moment(input).format(format);
 		return date;
+	}
+});
+
+app.filter('dateDiffFilter', function() {
+	return function(stop, start, unit) {
+		var diff = moment(stop).diff(moment(start), unit);
+		return diff;
 	}
 });
 
@@ -130,10 +139,11 @@ app.filter('programmeFilter', function() {
 			if(hours.length == 0) {	return input; }
 			var pmap = {};
 			for( var i in input) {
-				var pm = moment(input[i].start_time);
+				var pm_start = moment(input[i].start_time);
+				var pm_stop = moment(input[i].stop_time);
 				for(var j=0; j<hours.length; j++) {
 					var hm = moment(hours[j]);
-					if(pm.hour() == hm.hour()) {
+					if( pm_start.hour() == hm.hour() || pm_stop.hour() == hm.hour() ) {
 						pmap[input[i].title] = input[i];
 					}
 				}

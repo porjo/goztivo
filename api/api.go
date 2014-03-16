@@ -60,27 +60,34 @@ type FileRequest struct {
 	Date     time.Time
 }
 
+type OzClient struct {
+	Client *http.Client
+	UserAgent string
+	// Lock client access to enforce one request
+	// at a time to the upstream server
+	Mutex *sync.Mutex
+	// Keep track of when we last fetched, to keep
+	// our upstream requests spaced apart
+	LastFetch  time.Time
+}
+
 var (
 	dataList      *DataList
 	ResponseLimit int = 500
 	transport     *httpcache.Transport
-	client        *http.Client
-	userAgent     string
-	// Lock client access to enforce one request
-	// at a time to the upstream server
-	clientLock *sync.Mutex
-	// Keep track of when we last fetched, to keep
-	// our upstream requests spaced apart
-	lastFetch time.Time
+	ozclient OzClient
 )
 
 func InitAPI(userAgentIn string) {
 
-	userAgent = userAgentIn
+	ozclient.UserAgent = userAgentIn
 	transport = httpcache.NewMemoryCacheTransport()
-	client = transport.Client()
-	clientLock = &sync.Mutex{}
-	lastFetch = time.Now()
+
+	ozclient = OzClient{}
+	ozclient.Client = transport.Client()
+	ozclient.Mutex = &sync.Mutex{}
+	ozclient.LastFetch = time.Now()
+
 	dataList = &DataList{}
 	dataList.Mutex = &sync.Mutex{}
 
@@ -110,11 +117,11 @@ func GetDataList() error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("User-Agent", ozclient.UserAgent)
 	log.Println("Requesting datalist: " + DataListFile)
-	clientLock.Lock()
-	res, err := client.Do(req)
-	clientLock.Unlock()
+	ozclient.Mutex.Lock()
+	res, err := ozclient.Client.Do(req)
+	ozclient.Mutex.Unlock()
 	if err != nil {
 		return err
 	}
@@ -234,9 +241,8 @@ func ProgrammeHandler(w http.ResponseWriter, r *http.Request, params martini.Par
 	return
 }
 
-// Fetch filenames
+// Fetch remote files
 func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err error) {
-	client := transport.Client()
 	for _, fileRequest := range fileRequests {
 
 		var req *http.Request
@@ -247,17 +253,16 @@ func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err
 		if err != nil {
 			return
 		}
-		req.Header.Set("User-Agent", userAgent)
-		clientLock.Lock()
-		if time.Since(lastFetch) < time.Second {
-			log.Println("Fetching too quickly, sleeping...")
-			//Sleep between successive file gets (as per Oztivo usage policy)
-			time.Sleep(time.Second * 1)
-		}
+		req.Header.Set("User-Agent", ozclient.UserAgent)
+
+		// First fetch is to simply use whatever is in cache. This
+		// lets us respond to the client quicker by not having to wait
+		// for remote server to confirm freshness of file.
+		// We then do a second fetch in the background to update
+		// the cache for subsequent requests
+		req.Header.Set("Cache-Control", "max-stale=99999")
 		log.Println("Fetching URL: " + url)
-		res, err = client.Do(req)
-		clientLock.Unlock()
-		lastFetch = time.Now()
+		res, err = ozclient.Client.Do(req)
 		if err != nil {
 			return
 		}
@@ -266,6 +271,29 @@ func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err
 			err = HttpError{errMsg, 502}
 			return
 		}
+
+		go func() {
+			ozclient.Mutex.Lock()
+			if time.Since(ozclient.LastFetch) < time.Second {
+				log.Println("Fetching too quickly, sleeping...")
+				//Sleep between successive file gets (as per Oztivo usage policy)
+				time.Sleep(time.Second)
+			}
+			req.Header.Set("Cache-Control", "max-age=0")
+			res, err = ozclient.Client.Do(req)
+			ozclient.Mutex.Unlock()
+			ozclient.LastFetch = time.Now()
+
+			if err != nil {
+				return
+			}
+			if res.StatusCode != 200 {
+				errMsg := fmt.Sprintf("Remote server returned status code: %d when fetching '%s'", res.StatusCode, url)
+				err = HttpError{errMsg, 502}
+				return
+			}
+		}()
+
 		decoder := xml.NewDecoder(res.Body)
 		decoder.CharsetReader = charsetReader
 		channelDay := ChannelDay{}
@@ -291,15 +319,20 @@ func (pr ProgrammeRequest) buildFileList() (fileRequests []FileRequest, err erro
 		if channel != nil {
 			for _, tz := range pr.Days {
 				if channel.DataForT.contains(tz) {
-					t := tz.Add(time.Hour * 10)
+					loc, err := time.LoadLocation("Australia/Sydney")
+					if err != nil {
+						panic("Could not load timezone location")
+					}
+					t := time.Date(tz.Year(), tz.Month(), tz.Day(), tz.Hour(), tz.Minute(), tz.Second(), 0, loc)
 					filename := channel.Id + "_" + t.Format("2006-01-02") + ".xml.gz"
-					fileRequest := FileRequest{channelr, filename, t}
+					fileRequest := FileRequest{channelr, filename, tz}
 					fileRequests = append(fileRequests, fileRequest)
 				}
 			}
 		} else {
 			err = errors.New("Channel " + channelr + " not found")
 		}
+
 	}
 	return
 }
