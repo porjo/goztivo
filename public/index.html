@@ -61,7 +61,7 @@
 			</div>
 		</div>
 		<div class="row">
-			<div class="col-md-1 col-md-offset-1">
+			<div class="col-md-2">
 				<div ng-show="programme.list.length">
 					<h3>Filters</h3>
 					<div class="panel panel-default">
@@ -69,6 +69,11 @@
 							Categories
 						</div>
 						<select size=10 class="form-control" ng-model="programme.selectedCategory" ng-options="c for c in programme.categories" multiple></select>
+						<div class="row">
+							<div class="col-md-6 col-md-offset-3">
+								<a ng-click="programme.selectedCategory=[]">Unselect All</a>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -86,7 +91,7 @@
 									</tr>	
 								</thead>
 								<tbody>
-								<tr ng-repeat="p in c.programme | programmeFilter:channel.selectedHour:programme.selectedCategory">
+								<tr ng-repeat="p in c.programme | programmeFilter:channel.selectedHour:channel.selectedDay:programme.selectedCategory">
 									<td>{{p.title}}</td>
 									<td width="100px">{{p.start_time | dateFilter:"h:mm a"}}</td>
 									<td width="100px">{{p.stop_time | dateFilter:"h:mm a"}}</td>
@@ -97,7 +102,7 @@
 										<span ng-if="p.description.length > 100">
 											<a data-toggle="modal" data-target="#desc-{{$index}}">[more]</a>
 
-											<div class="modal fade" id="desc-{{$index}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">>
+											<div class="modal fade" id="desc-{{$index}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 												<div class="modal-dialog">
 													<div class="modal-content">
 														<div class="modal-header">

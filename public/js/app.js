@@ -44,9 +44,8 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 					       angular.forEach(data.data, function(v){
 						       $scope.programme.list.push(v);
 					       });
-					       //console.log('programmes: ', $scope.programme);
 					       BuildMetaLists();
-					       //console.log('programmes: ', $scope.programme);
+					       console.log('programmes: ', $scope.programme);
 				       }).error(function(data, status, headers, config) {
 					       console.log('failure',data);
 				       });
@@ -167,7 +166,7 @@ app.filter('truncateFilter', function() {
 });
 
 app.filter('programmeFilter', function() {
-	return function(input, hours, categories) {
+	return function(input, hours, days, categories) {
 		if( !angular.isDefined(input) ) {
 			return 
 		}
@@ -184,15 +183,20 @@ app.filter('programmeFilter', function() {
 				var pm_stop = moment(input[i].stop_time);
 				for(var j=0; j<hours.length; j++) {
 					var hm = moment(hours[j]);
-					if( (pm_start.hour() == hm.hour() && pm_start.day() == hm.day()) || (pm_stop.hour() == hm.hour() && pm_stop.day() == hm.day()) ) {
-						if( categories.length > 0 ) {
-							for(var c in categories) {
-								if( input[i].category.indexOf(categories[c]) > -1 ) {
-									pmap[input[i].title] = input[i];
+					for(var k=0; k<days.length; k++) {
+						var dm = moment(days[k]);
+						if( (pm_start.hour() == hm.hour() && pm_start.day() == dm.day()) || (pm_stop.hour() == hm.hour() && pm_stop.day() == dm.day()) ) {
+							if( categories.length > 0 ) {
+								for(var c in categories) {
+									if( angular.isDefined(input[i].category) ){
+										if( input[i].category.indexOf(categories[c]) > -1 ) {
+											pmap[input[i].title] = input[i];
+										}
+									}
 								}
+							} else {
+								pmap[input[i].title] = input[i];
 							}
-						} else {
-							pmap[input[i].title] = input[i];
 						}
 					}
 				}
