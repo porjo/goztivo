@@ -14,10 +14,10 @@
 
 	<div class="container-fluid" ng-controller="Ctrl">
 		<div class="row">
-			<div class="col-md-8 col-md-offset-2">
+			<div class="col-md-6 col-md-offset-3">
 				<h1>Goztivo <small>Oztivo TV Guide</small></h1>
 				<div class="row">
-					<div class="col-md-3">
+					<div class="col-md-4">
 						<div class="panel panel-default">
 							<div class="panel-heading">
 								<h3 class="panel-title">Channels</h3>
@@ -32,7 +32,7 @@
 						</div>
 
 					</div>
-					<div class="col-md-3">
+					<div class="col-md-4">
 						<div class="panel panel-default">
 							<div class="panel-heading">
 								<h3 class="panel-title">Days</h3>
@@ -44,7 +44,7 @@
 							</div>
 						</div>
 					</div>
-					<div class="col-md-3">
+					<div class="col-md-4">
 						<div class="panel panel-default">
 							<div class="panel-heading">
 								<h3 class="panel-title">Hours</h3>
@@ -53,7 +53,6 @@
 								<select size=10 class="form-control" ng-model="channel.selectedHour" ng-options="h.value as h.text for h in channel.hours" multiple></select>
 							</div>
 							<div class="panel-footer">
-								* Times are in local time
 							</div>
 						</div>
 					</div>

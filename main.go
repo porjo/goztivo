@@ -14,7 +14,7 @@ import (
 
 const (
 	NAME    = "Goztivo"
-	VERSION = "0.2"
+	VERSION = "0.3"
 )
 
 func main() {
