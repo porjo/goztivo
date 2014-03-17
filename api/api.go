@@ -17,6 +17,7 @@ import (
 	"code.google.com/p/go.text/transform"
 	"github.com/codegangsta/martini"
 	"github.com/gregjones/httpcache"
+	"github.com/gregjones/httpcache/diskcache"
 )
 
 type ProgrammeRequest struct {
@@ -61,27 +62,33 @@ type FileRequest struct {
 }
 
 type OzClient struct {
-	Client *http.Client
+	Client    *http.Client
 	UserAgent string
 	// Lock client access to enforce one request
 	// at a time to the upstream server
 	Mutex *sync.Mutex
 	// Keep track of when we last fetched, to keep
 	// our upstream requests spaced apart
-	LastFetch  time.Time
+	LastFetch time.Time
 }
 
 var (
 	dataList      *DataList
 	ResponseLimit int = 500
 	transport     *httpcache.Transport
-	ozclient OzClient
+	ozclient      OzClient
 )
 
 func InitAPI(userAgentIn string) {
 
 	ozclient.UserAgent = userAgentIn
-	transport = httpcache.NewMemoryCacheTransport()
+
+	tempDir, err := ioutil.TempDir("", "goztivo_")
+	if err != nil {
+		panic(err)
+	}
+	cache := diskcache.New(tempDir)
+	transport = httpcache.NewTransport(cache)
 
 	ozclient = OzClient{}
 	ozclient.Client = transport.Client()
