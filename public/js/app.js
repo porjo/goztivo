@@ -27,6 +27,8 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 		       $scope.channel.selectedDay = [];
 		       $scope.channel.map = {};
 		       $scope.programme.list = [];
+		       $scope.programme.ratings = [];
+		       $scope.programme.categories = [];
 
 		       GetChannels(); 
 
@@ -42,7 +44,9 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 					       angular.forEach(data.data, function(v){
 						       $scope.programme.list.push(v);
 					       });
-					       //console.log('programmes: ', $scope.programme.list);
+					       //console.log('programmes: ', $scope.programme);
+					       BuildMetaLists();
+					       //console.log('programmes: ', $scope.programme);
 				       }).error(function(data, status, headers, config) {
 					       console.log('failure',data);
 				       });
@@ -65,6 +69,7 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 		       function BuildHourList() {
 			       var mdt = moment().hour(0).minute(0);
 			       $scope.channel.hours = [];
+			       $scope.channel.selectedHour = [];
 			       for( var i=0; i<24; i++) {
 				       var text = mdt.format("HH:mm");
 				       var hour = {}
@@ -73,12 +78,43 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 				       text += "-" + mdt.format("HH:mm");
 				       hour.text = text;
 				       $scope.channel.hours.push(hour);
-				       if(moment().hour() == i){
-					       $scope.channel.selectedHour = [hour.value];
+				       if(moment().hour() <= i){
+					       $scope.channel.selectedHour.push(hour.value);
 				       }
 			       }
 		       }
 
+		       function BuildMetaLists() {
+			       for( var i in $scope.programme.list) {
+				       var p = $scope.programme.list[i];
+				       for( var j in p.programme ) {
+					       var show = p.programme[j];
+					       if( angular.isDefined(show.rating) ) {
+						       for( var r in show.rating ) {
+							       $scope.programme.ratings.push(show.rating[r].value);
+						       }
+					       }
+					       if( angular.isDefined(show.category) ) {
+						       for( var c in show.category ) {
+							       $scope.programme.categories.push(show.category[c]);
+						       }
+					       }
+				       }
+			       }
+			       $scope.programme.categories = ArrNoDupe($scope.programme.categories).sort();
+			       $scope.programme.ratings = ArrNoDupe($scope.programme.ratings).sort();
+		       }
+
+		       // Credit to: http://stackoverflow.com/a/6940176
+		       function ArrNoDupe(a) {
+			       var temp = {};
+			       for (var i = 0; i < a.length; i++)
+			       temp[a[i]] = true;
+			       var r = [];
+			       for (var k in temp)
+				       r.push(k);
+			       return r;
+		       }
 	       }]
 	      );
 
@@ -131,10 +167,15 @@ app.filter('truncateFilter', function() {
 });
 
 app.filter('programmeFilter', function() {
-	return function(input, hours) {
+	return function(input, hours, categories) {
 		if( !angular.isDefined(input) ) {
 			return 
 		}
+
+		if( !angular.isDefined(categories) ) {
+			categories = [];
+		}
+
 		if( angular.isDefined(hours) ) {
 			if(hours.length == 0) {	return input; }
 			var pmap = {};
@@ -143,8 +184,16 @@ app.filter('programmeFilter', function() {
 				var pm_stop = moment(input[i].stop_time);
 				for(var j=0; j<hours.length; j++) {
 					var hm = moment(hours[j]);
-					if( pm_start.hour() == hm.hour() || pm_stop.hour() == hm.hour() ) {
-						pmap[input[i].title] = input[i];
+					if( (pm_start.hour() == hm.hour() && pm_start.day() == hm.day()) || (pm_stop.hour() == hm.hour() && pm_stop.day() == hm.day()) ) {
+						if( categories.length > 0 ) {
+							for(var c in categories) {
+								if( input[i].category.indexOf(categories[c]) > -1 ) {
+									pmap[input[i].title] = input[i];
+								}
+							}
+						} else {
+							pmap[input[i].title] = input[i];
+						}
 					}
 				}
 			}

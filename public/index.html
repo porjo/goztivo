@@ -15,38 +15,45 @@
 	<div class="container-fluid" ng-controller="Ctrl">
 		<div class="row">
 			<div class="col-md-8 col-md-offset-2">
-				<h1>Goztivo</h1>
+				<h1>Goztivo <small>Oztivo TV Guide</small></h1>
 				<div class="row">
 					<div class="col-md-3">
 						<div class="panel panel-default">
 							<div class="panel-heading">
-								<h2>Channels</h2>
+								<h3 class="panel-title">Channels</h3>
 							</div>
 							<div class="panel-body">
 
 								<select size=10 class="form-control" ng-model="channel.selectedChannel" ng-change="programme.Fetch()" ng-options="c.id as c.display_name.text for c in channel.list | channelFilter:channel.query" multiple></select>
 								<input type="text" placeholder="Filter channels" class="form-control" ng-model="channel.query">
 							</div>
+							<div class="panel-footer">
+							</div>
 						</div>
 
 					</div>
 					<div class="col-md-3">
 						<div class="panel panel-default">
 							<div class="panel-heading">
-								<h2>Days</h2>
+								<h3 class="panel-title">Days</h3>
 							</div>
 							<div class="panel-body">
 								<select size=10 class="form-control" ng-model="channel.selectedDay" ng-change="programme.Fetch()" ng-options="d.value as d.text for d in channel.days" multiple></select>
+							</div>
+							<div class="panel-footer">
 							</div>
 						</div>
 					</div>
 					<div class="col-md-3">
 						<div class="panel panel-default">
 							<div class="panel-heading">
-								<h2>Hours</h2>
+								<h3 class="panel-title">Hours</h3>
 							</div>
 							<div class="panel-body">
 								<select size=10 class="form-control" ng-model="channel.selectedHour" ng-options="h.value as h.text for h in channel.hours" multiple></select>
+							</div>
+							<div class="panel-footer">
+								* Times are in local time
 							</div>
 						</div>
 					</div>
@@ -54,78 +61,85 @@
 			</div>
 		</div>
 		<div class="row">
-			<div class="col-md-8 col-md-offset-2">
+			<div class="col-md-1 col-md-offset-1">
 				<div ng-show="programme.list.length">
-					<p>* Times are in local time</p>
-					<div ng-repeat="c in programme.list">
-						<div class="row">
-							<div class="col-md-6">
-								<h2>{{channel.map[c.id]}}</h2>
-							</div>
-							<div class="col-md-6">
-								<h3>{{c.date | dateFilter:"dddd, MMMM Do YYYY"}}</h2>
-							</div>
+					<h3>Filters</h3>
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							Categories
 						</div>
-						<table class="table table-striped">
-							<thead>
-								<tr>
-									<th>Title</th><th>Start Time</th><th>Stop Time</th><th>Minutes</th><th>Description</th><th>Rating</th>
-								</tr>	
-							</thead>
-							<tbody>
-							<tr ng-repeat="p in c.programme | programmeFilter:channel.selectedHour">
-								<td>{{p.title}}</td>
-								<td width="100px">{{p.start_time | dateFilter:"h:mm a"}}</td>
-								<td width="100px">{{p.stop_time | dateFilter:"h:mm a"}}</td>
-								<td width="100px">{{p.stop_time | dateDiffFilter:p.start_time:'minutes'}}</td>
-								<td>
-									{{p.description | truncateFilter:100}} 
+						<select size=10 class="form-control" ng-model="programme.selectedCategory" ng-options="c for c in programme.categories" multiple></select>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-8">
+				<div ng-show="programme.list.length">
+					<div ng-repeat="c in programme.list">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h3>{{channel.map[c.id]}} <small>{{c.date | dateFilter:"dddd, MMMM Do YYYY"}}</small></h3>
+							</div>
+							<table class="table table-striped">
+								<thead>
+									<tr>
+										<th>Title</th><th>Start Time</th><th>Stop Time</th><th>Minutes</th><th>Description</th><th>Rating</th>
+									</tr>	
+								</thead>
+								<tbody>
+								<tr ng-repeat="p in c.programme | programmeFilter:channel.selectedHour:programme.selectedCategory">
+									<td>{{p.title}}</td>
+									<td width="100px">{{p.start_time | dateFilter:"h:mm a"}}</td>
+									<td width="100px">{{p.stop_time | dateFilter:"h:mm a"}}</td>
+									<td width="100px">{{p.stop_time | dateDiffFilter:p.start_time:'minutes'}}</td>
+									<td>
+										{{p.description | truncateFilter:100}} 
 
-									<span ng-if="p.description.length > 100">
-										<a data-toggle="modal" data-target="#desc-{{$index}}">[more]</a>
+										<span ng-if="p.description.length > 100">
+											<a data-toggle="modal" data-target="#desc-{{$index}}">[more]</a>
 
-										<div class="modal fade" id="desc-{{$index}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">>
-											<div class="modal-dialog">
-												<div class="modal-content">
-													<div class="modal-header">
-														<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-														<h4 class="modal-title">{{p.title}}</h4>
-													</div>
-													<div class="modal-body">
-														<p>{{p.description}}</p>
-													</div>
-													<div class="modal-footer">
-														<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-													</div>
-												</div><!-- /.modal-content -->
-											</div><!-- /.modal-dialog -->
-										</div><!-- /.modal -->
-									</span>
+											<div class="modal fade" id="desc-{{$index}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">>
+												<div class="modal-dialog">
+													<div class="modal-content">
+														<div class="modal-header">
+															<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+															<h4 class="modal-title">{{p.title}}</h4>
+														</div>
+														<div class="modal-body">
+															<p>{{p.description}}</p>
+														</div>
+														<div class="modal-footer">
+															<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+														</div>
+													</div><!-- /.modal-content -->
+												</div><!-- /.modal-dialog -->
+											</div><!-- /.modal -->
+										</span>
 
-								</td>
-								<td>
-									<div ng-repeat="r in p.rating">
-										{{r.value}}
-									</div>
-								</td>
-							</tr>
-							</tbody>
-						</table>
+									</td>
+									<td>
+										<div ng-repeat="r in p.rating">
+											{{r.value}}
+										</div>
+									</td>
+								</tr>
+								</tbody>
+							</table>
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 
-		<!-- 3rd party libraries -->
-		<script src="lib/jquery/2.1.0/jquery.min.js"></script>
-		<script src="lib/bootstrap/3.1.0/js/bootstrap.min.js"></script>
-		<script src="lib/angularjs/core/1.2.12/angular.js"></script>
-		<script src="lib/angularjs/core/1.2.12/angular-route.min.js"></script>
-		<script src="lib/angularjs/core/1.2.12/angular-resource.min.js"></script>
-		<script src="lib/momentjs/moment.min.js"></script> 
+	<!-- 3rd party libraries -->
+	<script src="lib/jquery/2.1.0/jquery.min.js"></script>
+	<script src="lib/bootstrap/3.1.0/js/bootstrap.min.js"></script>
+	<script src="lib/angularjs/core/1.2.12/angular.js"></script>
+	<script src="lib/angularjs/core/1.2.12/angular-route.min.js"></script>
+	<script src="lib/angularjs/core/1.2.12/angular-resource.min.js"></script>
+	<script src="lib/momentjs/moment.min.js"></script> 
 
-		<!-- App code -->
-		<script src="js/app.js"></script>
+	<!-- App code -->
+	<script src="js/app.js"></script>
 	</body>
-</html>
+	</html>
