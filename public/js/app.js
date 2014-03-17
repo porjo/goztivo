@@ -38,14 +38,10 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 			       }
 			       if( angular.isDefined($scope.channel.selectedChannel) && angular.isDefined($scope.channel.selectedDay) ) {
 				       $http.post('/api/programme',{channels: $scope.channel.selectedChannel, days: $scope.channel.selectedDay}).
-					       success(function(data, status, headers, config) {
-					       $scope.programme.list = [];
-					       //console.log('programme success', data);
-					       angular.forEach(data.data, function(v){
-						       $scope.programme.list.push(v);
-					       });
+					       success(function(result, status, headers, config) {
+					       $scope.programme.list = result.data;
+					       //console.log('programme success', result);
 					       BuildMetaLists();
-					       console.log('programmes: ', $scope.programme);
 				       }).error(function(data, status, headers, config) {
 					       console.log('failure',data);
 				       });
@@ -54,10 +50,10 @@ app.controller('Ctrl', ['$scope', '$http', '$timeout',
 
 		       function GetChannels() {
 			       $http.post('/api/channel',{channel_name: ''}).
-				       success(function(data, status, headers, config) {
-				       //console.log('channel success', data);
-				       angular.forEach(data, function(v){
-					       $scope.channel.list.push(v);
+				       success(function(result, status, headers, config) {
+				       //console.log('channel success', result);
+				       $scope.channel.list = result.data;
+				       angular.forEach(result.data, function(v){
 					       $scope.channel.map[v.id] = v.display_name.text;
 				       });
 			       }).error(function(data, status, headers, config) {

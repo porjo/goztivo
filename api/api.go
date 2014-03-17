@@ -36,17 +36,12 @@ type ChannelRequest struct {
 	Contains bool `json:"contains"`
 }
 
-type ChannelResponse struct {
-	Error    string    `json:"error"`
-	Channels []Channel `json:"channels,omitempty"`
-}
-
-type HttpError struct {
+type httpError struct {
 	msg        string
 	statusCode int
 }
 
-func (h HttpError) Error() string {
+func (h httpError) Error() string {
 	return h.msg
 }
 
@@ -55,13 +50,13 @@ type APIResponse struct {
 	Data  interface{} `json:"data,omitempty"`
 }
 
-type FileRequest struct {
+type fileRequest struct {
 	Channel  string
 	Filename string
 	Date     time.Time
 }
 
-type OzClient struct {
+type ozClient struct {
 	Client    *http.Client
 	UserAgent string
 	// Lock client access to enforce one request
@@ -76,12 +71,12 @@ var (
 	dataList      *DataList
 	ResponseLimit int = 500
 	transport     *httpcache.Transport
-	ozclient      OzClient
+	client      ozClient
 )
 
 func InitAPI(userAgentIn string) {
 
-	ozclient.UserAgent = userAgentIn
+	client.UserAgent = userAgentIn
 
 	tempDir, err := ioutil.TempDir("", "goztivo_")
 	if err != nil {
@@ -90,10 +85,10 @@ func InitAPI(userAgentIn string) {
 	cache := diskcache.New(tempDir)
 	transport = httpcache.NewTransport(cache)
 
-	ozclient = OzClient{}
-	ozclient.Client = transport.Client()
-	ozclient.Mutex = &sync.Mutex{}
-	ozclient.LastFetch = time.Now()
+	client = ozClient{}
+	client.Client = transport.Client()
+	client.Mutex = &sync.Mutex{}
+	client.LastFetch = time.Now()
 
 	dataList = &DataList{}
 	dataList.Mutex = &sync.Mutex{}
@@ -102,7 +97,7 @@ func InitAPI(userAgentIn string) {
 
 		for {
 			dataList.Mutex.Lock()
-			err := GetDataList()
+			err := getDataList()
 			dataList.Mutex.Unlock()
 			if err != nil {
 				log.Println(err)
@@ -115,7 +110,8 @@ func InitAPI(userAgentIn string) {
 	}()
 }
 
-func GetDataList() error {
+// Get Oztivo datalist file
+func getDataList() error {
 
 	dataList.Channels = nil
 	dataList.ChannelMap = nil
@@ -124,11 +120,11 @@ func GetDataList() error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", ozclient.UserAgent)
+	req.Header.Set("User-Agent", client.UserAgent)
 	log.Println("Requesting datalist: " + DataListFile)
-	ozclient.Mutex.Lock()
-	res, err := ozclient.Client.Do(req)
-	ozclient.Mutex.Unlock()
+	client.Mutex.Lock()
+	res, err := client.Client.Do(req)
+	client.Mutex.Unlock()
 	if err != nil {
 		return err
 	}
@@ -148,14 +144,15 @@ func GetDataList() error {
 	return nil
 }
 
+// Handle HTTP requests for channels
 func ChannelHandler(w http.ResponseWriter, r *http.Request, params martini.Params) {
 
-	apiResponse := &ChannelResponse{}
+	apiResponse := &APIResponse{}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		apiResponse.Error = "Error reading HTTP request"
-		WriteJsonRes(w, apiResponse, http.StatusBadRequest)
+		writeJsonRes(w, apiResponse, http.StatusBadRequest)
 		return
 	}
 
@@ -165,7 +162,7 @@ func ChannelHandler(w http.ResponseWriter, r *http.Request, params martini.Param
 		err = json.Unmarshal(body, &cr)
 		if err != nil {
 			apiResponse.Error = "Invalid JSON supplied, error: " + err.Error()
-			WriteJsonRes(w, apiResponse, http.StatusBadRequest)
+			writeJsonRes(w, apiResponse, http.StatusBadRequest)
 			return
 		}
 	}
@@ -176,11 +173,12 @@ func ChannelHandler(w http.ResponseWriter, r *http.Request, params martini.Param
 	defer dataList.Mutex.Unlock()
 
 	if cr.ChannelName == "" {
-		if len(dataList.ChannelMap) < ResponseLimit {
-			WriteJsonRes(w, dataList.ChannelMap, http.StatusOK)
+		if len(dataList.Channels) < ResponseLimit {
+			apiResponse.Data = dataList.Channels
+			writeJsonRes(w, apiResponse, http.StatusOK)
 		} else {
 			apiResponse.Error = fmt.Sprintf("Response count exceeded limit %d\n", ResponseLimit)
-			WriteJsonRes(w, apiResponse, http.StatusBadRequest)
+			writeJsonRes(w, apiResponse, http.StatusBadRequest)
 			return
 
 		}
@@ -192,12 +190,20 @@ func ChannelHandler(w http.ResponseWriter, r *http.Request, params martini.Param
 
 			}
 		}
-		WriteJsonRes(w, channels, http.StatusOK)
+		apiResponse.Data = channels
+		writeJsonRes(w, apiResponse, http.StatusOK)
 	} else {
-		WriteJsonRes(w, dataList.ChannelMap[cr.ChannelName], http.StatusOK)
+		if channel, ok := dataList.ChannelMap[cr.ChannelName]; ok {
+			apiResponse.Data = [1]*Channel{channel}
+			writeJsonRes(w, apiResponse, http.StatusOK)
+		} else {
+			apiResponse.Error = fmt.Sprintf("Channel '%s' not found", cr.ChannelName)
+			writeJsonRes(w, apiResponse, http.StatusBadRequest)
+		}
 	}
 }
 
+// Handle HTTP requests for programmes
 func ProgrammeHandler(w http.ResponseWriter, r *http.Request, params martini.Params) {
 
 	apiResponse := &APIResponse{}
@@ -205,7 +211,7 @@ func ProgrammeHandler(w http.ResponseWriter, r *http.Request, params martini.Par
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		apiResponse.Error = "Error reading HTTP request"
-		WriteJsonRes(w, apiResponse, http.StatusBadRequest)
+		writeJsonRes(w, apiResponse, http.StatusBadRequest)
 		return
 	}
 
@@ -213,7 +219,7 @@ func ProgrammeHandler(w http.ResponseWriter, r *http.Request, params martini.Par
 	err = json.Unmarshal(body, &pr)
 	if err != nil {
 		apiResponse.Error = "Invalid JSON supplied, error: " + err.Error()
-		WriteJsonRes(w, apiResponse, http.StatusBadRequest)
+		writeJsonRes(w, apiResponse, http.StatusBadRequest)
 		return
 	}
 
@@ -222,34 +228,34 @@ func ProgrammeHandler(w http.ResponseWriter, r *http.Request, params martini.Par
 	fileRequests, err := pr.buildFileList()
 	if err != nil {
 		apiResponse.Error = err.Error()
-		WriteJsonRes(w, apiResponse, http.StatusBadRequest)
+		writeJsonRes(w, apiResponse, http.StatusBadRequest)
 		return
 	}
 
 	if len(fileRequests) == 0 {
-		apiResponse.Error = "No Results found"
-		WriteJsonRes(w, apiResponse, http.StatusOK)
+		apiResponse.Error = "No results found"
+		writeJsonRes(w, apiResponse, http.StatusOK)
 		return
 	}
 
 	channelDays, err := fetchChannelDays(fileRequests)
 	if err != nil {
 		apiResponse.Error = err.Error()
-		if e, ok := err.(HttpError); ok {
-			WriteJsonRes(w, apiResponse, e.statusCode)
+		if e, ok := err.(httpError); ok {
+			writeJsonRes(w, apiResponse, e.statusCode)
 		} else {
-			WriteJsonRes(w, apiResponse, http.StatusInternalServerError)
+			writeJsonRes(w, apiResponse, http.StatusInternalServerError)
 		}
 		return
 	}
 
 	apiResponse.Data = &channelDays
-	WriteJsonRes(w, apiResponse, http.StatusOK)
+	writeJsonRes(w, apiResponse, http.StatusOK)
 	return
 }
 
 // Fetch remote files
-func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err error) {
+func fetchChannelDays(fileRequests []fileRequest) (channelDays []ChannelDay, err error) {
 	for _, fileRequest := range fileRequests {
 
 		var req *http.Request
@@ -260,7 +266,7 @@ func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err
 		if err != nil {
 			return
 		}
-		req.Header.Set("User-Agent", ozclient.UserAgent)
+		req.Header.Set("User-Agent", client.UserAgent)
 
 		// First fetch is to simply use whatever is in cache. This
 		// lets us respond to the client quicker by not having to wait
@@ -269,34 +275,34 @@ func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err
 		// the cache for subsequent requests
 		req.Header.Set("Cache-Control", "max-stale=99999")
 		log.Println("Fetching URL: " + url)
-		res, err = ozclient.Client.Do(req)
+		res, err = client.Client.Do(req)
 		if err != nil {
 			return
 		}
 		if res.StatusCode != 200 {
 			errMsg := fmt.Sprintf("Remote server returned status code: %d when fetching '%s'", res.StatusCode, url)
-			err = HttpError{errMsg, 502}
+			err = httpError{errMsg, 502}
 			return
 		}
 
 		go func() {
-			ozclient.Mutex.Lock()
-			if time.Since(ozclient.LastFetch) < time.Second {
+			client.Mutex.Lock()
+			if time.Since(client.LastFetch) < time.Second {
 				log.Println("Fetching too quickly, sleeping...")
 				//Sleep between successive file gets (as per Oztivo usage policy)
 				time.Sleep(time.Second)
 			}
 			req.Header.Set("Cache-Control", "max-age=0")
-			res, err = ozclient.Client.Do(req)
-			ozclient.Mutex.Unlock()
-			ozclient.LastFetch = time.Now()
+			res, err = client.Client.Do(req)
+			client.Mutex.Unlock()
+			client.LastFetch = time.Now()
 
 			if err != nil {
 				return
 			}
 			if res.StatusCode != 200 {
 				errMsg := fmt.Sprintf("Remote server returned status code: %d when fetching '%s'", res.StatusCode, url)
-				err = HttpError{errMsg, 502}
+				err = httpError{errMsg, 502}
 				return
 			}
 		}()
@@ -318,7 +324,12 @@ func fetchChannelDays(fileRequests []FileRequest) (channelDays []ChannelDay, err
 	return
 }
 
-func (pr ProgrammeRequest) buildFileList() (fileRequests []FileRequest, err error) {
+func (pr ProgrammeRequest) buildFileList() (fileRequests []fileRequest, err error) {
+
+	if len(pr.Days) == 0 {
+		return nil, errors.New("You must specify at least one day")
+	}
+
 	for _, channelr := range pr.Channels {
 		dataList.Mutex.Lock()
 		channel := dataList.ChannelMap[channelr]
@@ -332,7 +343,7 @@ func (pr ProgrammeRequest) buildFileList() (fileRequests []FileRequest, err erro
 					}
 					t := time.Date(tz.Year(), tz.Month(), tz.Day(), tz.Hour(), tz.Minute(), tz.Second(), 0, loc)
 					filename := channel.Id + "_" + t.Format("2006-01-02") + ".xml.gz"
-					fileRequest := FileRequest{channelr, filename, tz}
+					fileRequest := fileRequest{channelr, filename, tz}
 					fileRequests = append(fileRequests, fileRequest)
 				}
 			}
@@ -364,17 +375,13 @@ func charsetReader(charset string, input io.Reader) (io.Reader, error) {
 	return nil, fmt.Errorf("unsupported charset: %q", charset)
 }
 
-func WriteJsonRes(w http.ResponseWriter, obj interface{}, statusCode int) {
+func writeJsonRes(w http.ResponseWriter, obj interface{}, statusCode int) {
 	json, err := json.Marshal(&obj)
 	if err != nil {
 		json = []byte("{\"statusCode\": 500, \"error\": \"" + err.Error() + "\"}")
 	}
 
-	// JSON Vulnerability Protection for AngularJS
-	ngPrefix := []byte(")]}',\n")
-	ngPrefix = append(ngPrefix, json...)
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	w.Write(ngPrefix)
+	w.Write(json)
 }
