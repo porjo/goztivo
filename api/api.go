@@ -264,6 +264,7 @@ func fetchChannelDays(fileRequests []fileRequest) (channelDays []ChannelDay, err
 		url := BaseURL + fileRequest.Filename
 		req, err = http.NewRequest("GET", url, nil)
 		if err != nil {
+			log.Println(err)
 			return
 		}
 		req.Header.Set("User-Agent", client.UserAgent)
@@ -277,15 +278,28 @@ func fetchChannelDays(fileRequests []fileRequest) (channelDays []ChannelDay, err
 		log.Println("Fetching URL: " + url)
 		res, err = client.Client.Do(req)
 		if err != nil {
+			log.Println(err)
 			return
 		}
 		if res.StatusCode != 200 {
 			errMsg := fmt.Sprintf("Remote server returned status code: %d when fetching '%s'", res.StatusCode, url)
 			err = httpError{errMsg, 502}
+			log.Println(errMsg)
 			return
 		}
 
 		go func() {
+			var req *http.Request
+			var res *http.Response
+			var err error
+
+			req, err = http.NewRequest("GET", url, nil)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			req.Header.Set("User-Agent", client.UserAgent)
+
 			client.Mutex.Lock()
 			if time.Since(client.LastFetch) < time.Second {
 				log.Println("Fetching too quickly, sleeping...")
@@ -294,15 +308,16 @@ func fetchChannelDays(fileRequests []fileRequest) (channelDays []ChannelDay, err
 			}
 			req.Header.Set("Cache-Control", "max-age=0")
 			res, err = client.Client.Do(req)
-			client.Mutex.Unlock()
 			client.LastFetch = time.Now()
+			client.Mutex.Unlock()
 
 			if err != nil {
+				log.Println(err)
 				return
 			}
 			if res.StatusCode != 200 {
 				errMsg := fmt.Sprintf("Remote server returned status code: %d when fetching '%s'", res.StatusCode, url)
-				err = httpError{errMsg, 502}
+				log.Println(errMsg)
 				return
 			}
 		}()
@@ -313,6 +328,7 @@ func fetchChannelDays(fileRequests []fileRequest) (channelDays []ChannelDay, err
 		channelDay.ChannelId = fileRequest.Channel
 		err = decoder.Decode(&channelDay)
 		if err != nil {
+			log.Println(err)
 			res.Body.Close()
 			return
 		}

@@ -10,8 +10,7 @@ Goztivo has 2 components:
 to serve the HTML/JS content
 
 Goztivo aims to follow Oztivo's usage policy where possible by sending a unique HTTP 
-user-agent string and keeping traffic to a minimum by caching data and limiting upstream 
-requests to a maximum of one HTTP connection per second.
+user-agent string and keeping traffic to a minimum by caching data.
 
 ## Quick start
 
