@@ -67,16 +67,32 @@ type ozClient struct {
 	LastFetch time.Time
 }
 
+type httpClientReq struct {
+	req     *http.Request
+	resChan chan *httpClientRes
+}
+
+type httpClientRes struct {
+	res *http.Response
+	err error
+}
+
 var (
 	dataList      *DataList
 	ResponseLimit int = 500
 	transport     *httpcache.Transport
-	client      ozClient
+	client        ozClient
 )
+
+var hc chan httpClientReq
 
 func InitAPI(userAgentIn string) {
 
 	client.UserAgent = userAgentIn
+
+	hc = make(chan httpClientReq, 10)
+	log.Println("init, spawning client goroutine")
+	go httpClient(hc)
 
 	tempDir, err := ioutil.TempDir("", "goztivo_")
 	if err != nil {
@@ -267,7 +283,6 @@ func fetchChannelDays(fileRequests []fileRequest) (channelDays []ChannelDay, err
 			log.Println(err)
 			return
 		}
-		req.Header.Set("User-Agent", client.UserAgent)
 
 		// First fetch is to simply use whatever is in cache. This
 		// lets us respond to the client quicker by not having to wait
@@ -276,51 +291,30 @@ func fetchChannelDays(fileRequests []fileRequest) (channelDays []ChannelDay, err
 		// the cache for subsequent requests
 		req.Header.Set("Cache-Control", "max-stale=99999")
 		log.Println("Fetching URL: " + url)
-		res, err = client.Client.Do(req)
-		if err != nil {
-			log.Println(err)
+
+		hcr := httpClientReq{}
+		hcr.req = req
+		hcr.resChan = make(chan *httpClientRes)
+
+		log.Println("fetch, submitting http client request")
+		hc <- hcr
+
+		log.Println("fetch, waiting for http client response")
+		hcres := <-hcr.resChan
+		log.Println("fetch, received http client response")
+		if hcres.err != nil {
+			log.Println(hcres.err)
 			return
 		}
+
+		res = hcres.res
+
 		if res.StatusCode != 200 {
 			errMsg := fmt.Sprintf("Remote server returned status code: %d when fetching '%s'", res.StatusCode, url)
 			err = httpError{errMsg, 502}
 			log.Println(errMsg)
 			return
 		}
-
-		go func() {
-			var req *http.Request
-			var res *http.Response
-			var err error
-
-			req, err = http.NewRequest("GET", url, nil)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			req.Header.Set("User-Agent", client.UserAgent)
-
-			client.Mutex.Lock()
-			if time.Since(client.LastFetch) < time.Second {
-				log.Println("Fetching too quickly, sleeping...")
-				//Sleep between successive file gets (as per Oztivo usage policy)
-				time.Sleep(time.Second)
-			}
-			req.Header.Set("Cache-Control", "max-age=0")
-			res, err = client.Client.Do(req)
-			client.LastFetch = time.Now()
-			client.Mutex.Unlock()
-
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			if res.StatusCode != 200 {
-				errMsg := fmt.Sprintf("Remote server returned status code: %d when fetching '%s'", res.StatusCode, url)
-				log.Println(errMsg)
-				return
-			}
-		}()
 
 		decoder := xml.NewDecoder(res.Body)
 		decoder.CharsetReader = charsetReader
@@ -338,6 +332,42 @@ func fetchChannelDays(fileRequests []fileRequest) (channelDays []ChannelDay, err
 		res.Body.Close()
 	}
 	return
+}
+
+func httpClient(c <-chan httpClientReq) {
+	log.Println("client, starting")
+	for {
+		log.Println("client, waiting for request")
+		select {
+		case r, ok := <-c:
+			if !ok {
+				return
+			}
+			log.Println("client, request received")
+			hcr := &httpClientRes{}
+			r.req.Header.Set("User-Agent", client.UserAgent)
+			hcr.res, hcr.err = client.Client.Do(r.req)
+			log.Println("client, return result")
+			r.resChan <- hcr
+
+			go func() {
+				time.Sleep(time.Second)
+
+				r.req.Header.Set("Cache-Control", "max-age=0")
+				log.Println("client, subrequest made")
+				res, err := client.Client.Do(r.req)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				if res.StatusCode != 200 {
+					errMsg := fmt.Sprintf("Remote server returned status code: %d when fetching '%s'", res.StatusCode, r.req.URL)
+					log.Println(errMsg)
+					return
+				}
+			}()
+		}
+	}
 }
 
 func (pr ProgrammeRequest) buildFileList() (fileRequests []fileRequest, err error) {
