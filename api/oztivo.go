@@ -42,7 +42,7 @@ type Programme struct {
 		Value string `xml:"value" json:"value,omitempty"`
 	} `xml:"rating" json:"rating,omitempty"`
 	StarRating []struct {
-		Value string `xml:"value" json"value,omitempty"`
+		Value string `xml:"value" json:"value,omitempty"`
 	} `xml:"star-rating" json:"star_rating,omitempty"`
 }
 

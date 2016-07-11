@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"code.google.com/p/go.text/encoding/charmap"
-	"code.google.com/p/go.text/transform"
 	"github.com/codegangsta/martini"
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
 )
 
 type ProgrammeRequest struct {
@@ -71,7 +71,7 @@ var (
 	dataList      *DataList
 	ResponseLimit int = 500
 	transport     *httpcache.Transport
-	client      ozClient
+	client        ozClient
 )
 
 func InitAPI(userAgentIn string) {
